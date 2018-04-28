@@ -6,6 +6,7 @@ variables:
   DB_USER: happyschool
   DB_PASS: libreschool
   DB_EXTENSION: unaccent
+  PG_PASSWORD: passw0rd
 
 before_script:
     - export DEBIAN_FRONTEND=noninteractive && export DEBCONF_NONINTERACTIVE=true
@@ -18,10 +19,10 @@ before_script:
 
 test:
     script:
-        - export PGPASSWORD=$DB_PASS
+        - export PGPASSWORD=passw0rd
         - cp happyschool/settings.example.py happyschool/settings.py
         - sed -i 's/DEBUG = False/DEBUG = True/g' happyschool/settings.py
         - python3 manage.py makemigrations && python3 manage.py migrate
-        - psql -h "sameersbn-postgresql" -U "$DB_USER" -d "$DB_NAME" -c 'CREATE EXTENSION unaccent;'
+        - psql -h "sameersbn-postgresql" -U "postgres" -d "template1" -c 'CREATE EXTENSION unaccent;'
         - coverage run --source='.' manage.py test
         - coverage report
