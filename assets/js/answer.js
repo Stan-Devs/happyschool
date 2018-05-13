@@ -19,21 +19,18 @@
 
 import Vue from 'vue';
 
-import Vuex from 'vuex';
-Vue.use(Vuex);
-
-import MailAnswer from '../mail_answer/mail_answer.vue';
-
-const store = new Vuex.Store({
-  state: {
-    settings: settings
-  },
-});
+import Answer from '../mail_answer/answer.vue';
 
 var mailNotificationApp = new Vue({
     el: '#vue-app',
-    data: {settings: {}},
-    store,
-    template: '<mail-answer/>',
-    components: { MailAnswer },
+    data: {
+        uuid: null,
+        component: '',
+    },
+    template: '<component :is="component" :uuid="uuid"/>',
+    components: { 'answer': Answer },
+    mounted: function () {
+        this.uuid = uuid;
+        this.component = 'answer';
+    }
 })

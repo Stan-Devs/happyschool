@@ -135,6 +135,9 @@ AUTHENTICATION_BACKENDS = [
 STATIC_URL = '/static/'
 MEDIA_URL = '/media/'
 
+LOCAL_DOMAIN = ''
+REMOTE_DOMAIN = ''
+
 if DEBUG:
     STATICFILES_DIRS = [
         os.path.join(BASE_DIR, "static/"),
