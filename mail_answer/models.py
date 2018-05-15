@@ -22,11 +22,16 @@ import uuid
 from django.db import models
 from django.contrib.postgres.fields import JSONField
 
+from rest_framework.authtoken.models import Token
+
 from core.models import StudentModel
+
 
 class SettingsModel(models.Model):
     use_remote = models.BooleanField(default=False)
     is_remote = models.BooleanField(default=False)
+    token = models.CharField(max_length=100, blank=True,
+                             help_text="Utilisé par le serveur local pour communiquer avec le serveur distant (jeton à créer sur le serveur distant).")
 
 
 class ChoiceModel(models.Model):

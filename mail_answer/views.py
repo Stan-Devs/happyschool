@@ -17,6 +17,9 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with HappySchool.  If not, see <http://www.gnu.org/licenses/>.
 
+import json
+import requests
+
 from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet, GenericViewSet
 from rest_framework.mixins import UpdateModelMixin, RetrieveModelMixin
@@ -37,10 +40,26 @@ from .models import MailTemplateModel, MailAnswerModel, ChoiceModel, OptionModel
 permissions = (IsAuthenticated, DjangoModelPermissions,)
 
 
+def send_to_remote(end_url, serializer):
+    settings = SettingsModel.objects.first()
+    if settings.use_remote and not settings.is_remote:
+        headers = {'Authorization': 'Token ' + settings.token}
+        domain = 'app.isln.be'
+        requests.post('https://%s/mail_answer/%s/' % (domain, end_url),
+                      data=json.dumps(serializer.data),
+                      headers=headers)
+
+
 class OptionsViewSet(ModelViewSet):
     queryset = OptionModel.objects.all()
     serializer_class = OptionSerializer
     permission_classes = permissions
+
+    def perform_create(self, serializer):
+        send_to_remote('options', serializer)
+
+    def perform_update(self, serializer):
+        send_to_remote('options', serializer)
 
 
 class ChoicesViewSet(ModelViewSet):
