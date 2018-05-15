@@ -29,7 +29,8 @@ from core.people import People
 from core.models import ResponsibleModel, StudentModel, ClasseModel, EmailModel
 
 from mail_notification.models import EmailNotification, OtherEmailGroupModel, OtherEmailModel
-from mail_answer.models import MailAnswerModel, MailTemplateModel
+from mail_answer.models import MailAnswerModel, MailTemplateModel, SettingsModel
+from mail_answer.tasks import task_create_answers
 
 
 @shared_task(bind=True)
@@ -222,6 +223,9 @@ def get_emails(email_to: list, to_type: str, teaching: str="secondaire", respons
         if template:
             students = list(map(lambda s: (s, MailAnswerModel(student=s, template=template)), students))
             MailAnswerModel.objects.bulk_create(map(lambda s: s[1], students))
+            settings = SettingsModel.objects.first()
+            if settings.use_remote and not settings.is_remote:
+                task_create_answers.apply_async(countdown=1)
             for s, a in students:
                 emails += list(map(lambda e: (e, a), get_parents_email(s)))
             return emails
@@ -231,4 +235,3 @@ def get_emails(email_to: list, to_type: str, teaching: str="secondaire", respons
 
         # Remove duplicates.
         return set(emails)
-

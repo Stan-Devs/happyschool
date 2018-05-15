@@ -17,10 +17,17 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with HappySchool.  If not, see <http://www.gnu.org/licenses/>.
 
-from django.contrib import admin
+import subprocess
 
-from .models import SettingsModel, MailAnswerModel, MailTemplateModel
+from celery import shared_task
 
-admin.site.register(SettingsModel)
-admin.site.register(MailAnswerModel)
-admin.site.register(MailTemplateModel)
+from django.conf import settings
+
+
+@shared_task(bind=True)
+def task_sync_templates(self):
+    subprocess.run(settings.MAIL_ANSWER['template_sync'], shell=True)
+
+@shared_task(bind=True)
+def task_create_answers(self):
+    subprocess.run(settings.MAIL_ANSWER['mail_answers_create'], shell=True)

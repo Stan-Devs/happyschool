@@ -21,17 +21,17 @@ import uuid
 
 from django.db import models
 from django.contrib.postgres.fields import JSONField
+from django.conf import settings
 
 from rest_framework.authtoken.models import Token
 
 from core.models import StudentModel
+from .tasks import task_sync_templates
 
 
 class SettingsModel(models.Model):
     use_remote = models.BooleanField(default=False)
     is_remote = models.BooleanField(default=False)
-    token = models.CharField(max_length=100, blank=True,
-                             help_text="Utilisé par le serveur local pour communiquer avec le serveur distant (jeton à créer sur le serveur distant).")
 
 
 class ChoiceModel(models.Model):
@@ -53,6 +53,12 @@ class MailTemplateModel(models.Model):
     options = models.ManyToManyField(OptionModel, blank=True)
     is_used = models.BooleanField(default=False)
     datetime_creation = models.DateTimeField()
+
+    def save(self, *args, **kwargs):
+        super().save(*args, **kwargs)
+        settings = SettingsModel.objects.first()
+        if settings.use_remote and not settings.is_remote:
+            task_sync_templates.apply_async(countdown=1)
 
 
 class MailAnswerModel(models.Model):
