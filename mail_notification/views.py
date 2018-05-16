@@ -37,6 +37,7 @@ from rest_framework.permissions import IsAuthenticated
 from annuaire.views import create_classes_list
 from core.permissions import IsInGroupPermission
 from mail_answer.models import MailTemplateModel
+from mail_answer.models import SettingsModel as AnswersSettings
 
 from mail_notification.models import EmailTag, EmailNotification, EmailAttachment, EmailSender,\
     OtherEmailGroupModel, OtherEmailModel
@@ -166,8 +167,13 @@ class SendEmailsView(APIView):
             html_files += "</ul>"
             context['files'] = html_files
 
+        # Add a link to a form if asked.
         if email_to_sent.answers:
-            context['link_to_form'] = "https://local.isln.be/mail_answer/answer/specific_uuid/"
+            url = "https://local.isln.be/mail_answer/answer/specific_uuid/"
+            answers_settings = AnswersSettings.first()
+            if answers_settings and answers_settings.use_remote:
+                url = url.replace("local.isln.be", "app.isln.be")
+            context['link_to_form'] = url
 
         email_to_sent.body = template.render(context)
         email_to_sent.save()

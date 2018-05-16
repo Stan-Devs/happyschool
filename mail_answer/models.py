@@ -54,12 +54,6 @@ class MailTemplateModel(models.Model):
     is_used = models.BooleanField(default=False)
     datetime_creation = models.DateTimeField()
 
-    def save(self, *args, **kwargs):
-        super().save(*args, **kwargs)
-        settings = SettingsModel.objects.first()
-        if settings.use_remote and not settings.is_remote:
-            task_sync_templates.apply_async(countdown=1)
-
 
 class MailAnswerModel(models.Model):
     uuid = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)

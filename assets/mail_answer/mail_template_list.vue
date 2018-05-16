@@ -35,7 +35,7 @@
                         Utilisé par un envoi d'email : <icon :name="template.is_used ? 'check' : 'times'" scale="1.2"
                                                              :color="template.is_used ? 'green' : 'red'"></icon>
                     </p>
-                    <b-button v-if="!(remoteInUse && isRemote)" @click="editTemplate(template.id)"><icon name="edit"></icon>Modifier</b-button>
+                    <b-button v-if="!(remoteInUse && !(isRemote == template.is_used))" @click="editTemplate(template.id)"><icon name="edit"></icon>Modifier</b-button>
                     <b-button v-if="template.is_used && !(remoteInUse && !isRemote)" @click="showAnswers(template.id)" variant="light">
                         <icon name="eye"></icon>
                         Voir les réponses
