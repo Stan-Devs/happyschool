@@ -26,8 +26,27 @@ import DossierEleve from '../dossier_eleve/dossier_eleve.vue';
 
 const store = new Vuex.Store({
   state: {
-    settings: settings
+    settings: settings,
+    filters: []
   },
+  mutations: {
+      addFilter: function (state, filter) {
+          // If filter is a matricule, remove name filter to avoid conflict.
+          if (filter.filterType === 'matricule') {
+              this.commit('removeFilter', 'name');
+          }
+
+          state.filters.push(filter);
+      },
+      removeFilter: function (state, key) {
+          for (let f in state.filters) {
+              if (state.filters[f].value === key.value) {
+                  state.filters.splice(f, 1);
+                  break;
+              }
+          }
+      }
+  }
 });
 
 var mailNotificationApp = new Vue({

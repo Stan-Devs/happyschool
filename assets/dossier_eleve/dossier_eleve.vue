@@ -20,7 +20,54 @@
 <template>
     <div>
         <b-container>
-            <h1>Dossier des élèves</h1>
+            <b-row>
+                <h2>Dossier des élèves</h2>
+            </b-row>
+            <b-row>
+                <b-col>
+                    <b-form-group>
+                        <div>
+                            <b-btn variant="outline-success" @click="openDynamicModal('add-modal')">
+                                <icon name="plus" scale="1" color="green"></icon>
+                                Nouveau cas
+                            </b-btn>
+                            <b-btn variant="outline-secondary" v-b-toggle.filters>
+                                <icon name="search" scale="1"></icon>
+                                Ajouter des filtres
+                            </b-btn>
+                        </div>
+                    </b-form-group>
+                </b-col>
+            </b-row>
+            <b-row>
+                <b-col>
+                        <b-collapse id="filters" v-model=showFilters>
+                            <b-card>
+                                <filters app="dossier_eleve" model="cas_eleve" ref="filters" @update="applyFilter"></filters>
+                            </b-card>
+                        </b-collapse>
+                    </b-col>
+            </b-row>
+            <b-pagination class="mt-1" :total-rows="entriesCount" v-model="currentPage" v-on:change="changePage">
+            </b-pagination>
+            <b-card no-body class="current-card d-none d-md-block d-lg-block d-xl-block">
+                <b-row class="text-center">
+                    <b-col cols="2"><strong>Catégorie</strong></b-col>
+                    <b-col><strong>Commentaire(s)</strong></b-col>
+                </b-row>
+            </b-card>
+            <cas-eleve-entry
+                v-for="(entry, index) in entries"
+                v-bind:key="entry.id"
+                v-bind:row-data="entry"
+                @delete="askDelete(entry.id)"
+                @edit="editEntry(index)"
+                @filterStudent="filterStudent($event)"
+                >
+            </cas-eleve-entry>
+            <b-modal ref="deleteModal" cancel-title="Annuler" hide-header centered @ok="deleteEntry">
+                Êtes-vous sûr de vouloir supprimer définitivement cette entrée ?
+            </b-modal>
         </b-container>
     </div>
 </template>
@@ -34,16 +81,80 @@ import Icon from 'vue-awesome/components/Icon.vue'
 Vue.component('icon', Icon);
 
 import axios from 'axios';
+window.axios = axios;
+window.axios.defaults.baseURL = window.location.origin; // In order to have httpS.
 
+import Filters from '../common/filters.vue'
+import CasEleveEntry from './casEleveEntry.vue'
 
 export default {
     data: function () {
         return {
+            entriesCount: 20,
+            currentPage: 1,
+            entries: [],
+            currentEntry: -1,
+            currentModal: 'add-modal',
+            filter: "",
+            ordering: "&ordering=-datetime_encodage",
+            showFilters: false,
         }
     },
     methods: {
+        changePage: function (page) {
+            return;
+        },
+        openDynamicModal: function (modal) {
+            this.currentModal = modal;
+            // this.$refs.dynamicModal.show();
+        },
+        filterStudent: function (matricule) {
+            this.showFilters = true;
+            this.$store.commit('addFilter',
+                {filterType: 'matricule_id', tag: matricule, value: matricule}
+            );
+            this.applyFilter()
+        },
+        applyFilter: function () {
+            this.filter = "";
+            let storeFilters = this.$store.state.filters
+            console.log(storeFilters);
+            for (let f in storeFilters) {
+                if (storeFilters[f].filterType.startsWith("date")
+                    || storeFilters[f].filterType.startsWith("time")) {
+                    let ranges = storeFilters[f].value.split("_");
+                    this.filter += "&" + storeFilters[f].filterType + "__gt=" + ranges[0];
+                    this.filter += "&" + storeFilters[f].filterType + "__lt=" + ranges[1];
+                } else {
+                    this.filter += "&" + storeFilters[f].filterType + "=" + storeFilters[f].value;
+                }
+            }
+            this.loadEntries();
+        },
+        askDelete: function (id) {
+            this.currentEntry = id;
+            this.$refs.deleteModal.show();
+        },
+        deleteEntry: function () {
+            const token = { xsrfCookieName: 'csrftoken', xsrfHeaderName: 'X-CSRFToken'};
+            axios.delete('/dossier_eleve/api/cas_eleve/' + this.currentEntry + '/', token)
+            .then(response => {
+                this.loadEntries();
+            });
+        },
+        loadEntries: function () {
+            axios.get('/dossier_eleve/api/cas_eleve/?page=' + this.currentPage + this.filter + this.ordering)
+            .then(response => {
+                this.entries = response.data.results;
+            });
+        },
+    },
+    mounted: function () {
+        this.loadEntries();
     },
     components: {
+        'filters': Filters,
+        'cas-eleve-entry': CasEleveEntry,
     }
 }
 </script>

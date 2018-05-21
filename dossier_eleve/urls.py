@@ -20,6 +20,8 @@
 from django.conf.urls import url
 from django.urls import path
 
+from rest_framework.routers import DefaultRouter
+
 from . import views
 
 urlpatterns = [
@@ -45,3 +47,8 @@ urlpatterns = [
 #    url(r'^encoder_sortie/(?P<passageId>[0-9]+)$', views.encoder_sortie, name='encoder_sortie'),
     path('test_vue', views.DossierEleveView.as_view()),
 ]
+
+router = DefaultRouter()
+router.register(r'api/cas_eleve', views.CasEleveViewSet)
+
+urlpatterns += router.urls

@@ -18,12 +18,14 @@
 # along with HappySchool.  If not, see <http://www.gnu.org/licenses/>.
 
 from django.db import models
+from django.contrib.auth.models import Group
 
 from core.models import StudentModel, TeachingModel
 
 
 class SettingsModel(models.Model):
     teachings = models.ManyToManyField(TeachingModel, default=None)
+    all_access = models.ManyToManyField(Group, default=None, blank=True)
     enable_submit_sanctions = models.BooleanField(default=True)
 
 

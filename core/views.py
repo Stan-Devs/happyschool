@@ -34,7 +34,7 @@ class BaseFilters(filters.FilterSet):
             CharField: {
                 'filter_class': filters.CharFilter,
                 'extra': lambda f: {
-                    'lookup_expr': 'icontains',
+                    'lookup_expr': 'unaccent__icontains',
                 },
             },
         }
@@ -54,7 +54,7 @@ class BaseModelViewSet(ModelViewSet):
     all_access = ()
 
     def get_queryset(self):
-        if not self.filter_access or self.request.user.groups.filter(name__in=self.all_access).exists():
+        if not self.filter_access or self.request.user.groups.intersection(self.all_access).exists():
             return self.queryset
         else:
             teachings = ResponsibleModel.objects.get(user=self.request.user).teaching.all()

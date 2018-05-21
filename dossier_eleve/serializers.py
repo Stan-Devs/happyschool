@@ -19,6 +19,7 @@
 
 from rest_framework import serializers
 
+from core.serializers import StudentSerializer
 from .models import *
 
 
@@ -28,17 +29,32 @@ class SettingsSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 
-class CasEleveSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = CasEleve
-        fields = '__all__'
-
 class InfoEleveSerializer(serializers.ModelSerializer):
     class Meta:
         model = InfoEleve
         fields = '__all__'
 
+
 class SanctionDecisionDisciplinaireSerializer(serializers.ModelSerializer):
     class Meta:
         model = SanctionDecisionDisciplinaire
+        fields = '__all__'
+
+
+class CasEleveSerializer(serializers.ModelSerializer):
+    matricule = StudentSerializer(read_only=True)
+    matricule_id = serializers.PrimaryKeyRelatedField(queryset=StudentModel.objects.all(),
+                                                      source='matricule', required=False,
+                                                      allow_null=True)
+    info = InfoEleveSerializer(read_only=True)
+    info_id = serializers.PrimaryKeyRelatedField(queryset=InfoEleve.objects.all(),
+                                                      source='info', required=False,
+                                                      allow_null=True)
+
+    sanction_decision = SanctionDecisionDisciplinaireSerializer(read_only=True)
+    sanction_decision_id = serializers.PrimaryKeyRelatedField(queryset=SanctionDecisionDisciplinaire.objects.all(),
+                                                 source='sanction_decision', required=False,
+                                                 allow_null=True)
+    class Meta:
+        model = CasEleve
         fields = '__all__'

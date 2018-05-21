@@ -29,6 +29,8 @@ from django.db.models import Count, Q
 from django.core.exceptions import ObjectDoesNotExist
 
 # Vue app imports
+import json
+
 from rest_framework.renderers import JSONRenderer
 from rest_framework.permissions import IsAuthenticated, DjangoModelPermissions
 
@@ -689,6 +691,13 @@ class DossierEleveView(LoginRequiredMixin,
                        TemplateView):
     template_name = "dossier_eleve/dossier_eleve.html"
     permission_required = ('dossier_eleve.can_access')
+    filters = [
+        {'value': 'name', 'text': 'Nom'},
+        {'value': 'info__info', 'text': 'Info'},
+        {'value': 'sanction_decision__sanction_decision', 'text': 'Sanction/décision'},
+        {'value': 'datetime_encodage', 'text': 'Date encodage'},
+        {'value': 'matricule_id', 'text': 'Matricule'},
+    ]
 
     def get_context_data(self, **kwargs):
         # Get settings.
@@ -696,16 +705,29 @@ class DossierEleveView(LoginRequiredMixin,
         if not settings:
             # Create default settings.
             SettingsModel.objects.create().save()
+
         # Add to the current context.
         context = super().get_context_data(**kwargs)
         context['settings'] = JSONRenderer().render(SettingsSerializer(settings).data).decode()
+        context['filters'] = json.dumps(self.filters)
         return context
 
-class AppelViewSet(BaseModelViewSet):
+
+class CasEleveFilter(BaseFilters):
+    class Meta:
+        fields_to_filter = ('name', 'matricule_id', 'info__info', 'sanction_decision__sanction_decision',
+                            'datetime_encodage',)
+        model = CasEleve
+        fields = BaseFilters.Meta.generate_filters(fields_to_filter)
+        filter_overrides = BaseFilters.Meta.filter_overrides
+
+
+class CasEleveViewSet(BaseModelViewSet):
     queryset = CasEleve.objects.all()
     filter_access = True
+    all_access = SettingsModel.objects.first().all_access.all()
 
     serializer_class = CasEleveSerializer
     permission_classes = (IsAuthenticated, DjangoModelPermissions,)
-    # filter_class = AppelFilter
-    # ordering_fields = ('name', 'datetime_appel', 'datetime_traitement', 'is_traiter')
+    filter_class = CasEleveFilter
+    ordering_fields = ('datetime_encodage',)
