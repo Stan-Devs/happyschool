@@ -40,7 +40,7 @@
                                     :options="nameOptions"
                                     @search-change="getNameOptions"
                                     :loading="nameLoading"
-                                    placeholder="Rechercher une personne…"
+                                    placeholder="Rechercher un étudiant…"
                                     select-label=""
                                     selected-label="Sélectionné"
                                     deselect-label=""
@@ -61,18 +61,64 @@
                         </b-col>
                     </b-form-row>
                     <b-form-row>
-                        <b-col>
-                            <b-form-group label="Objet" label-for="input-object" :state="inputStates.object_id">
-                                <b-form-select id="input-object" v-model="form.object_id" :options="objectOptions">
-                                    <template slot="first">
-                                        <option :value="null" disabled>Choisissez un objet</option>
-                                    </template>
-                                </b-form-select>
-                                <span slot="invalid-feedback">{{ errorMsg('object_id') }}</span>
-                            </b-form-group>
-                        </b-col>
+                        <b-form-group label="Demandeur" label-for="input-demandeur" :state="inputStates.demandeur">
+                            <multiselect id="input-demandeur"
+                                :internal-search="false"
+                                :options="demandeurOptions"
+                                @search-change="getDemandeurOptions"
+                                :loading="demandeurLoading"
+                                placeholder="Rechercher un responsable…"
+                                select-label=""
+                                selected-label="Sélectionné"
+                                deselect-label=""
+                                label="display"
+                                track-by="display"
+                                v-model="form.demandeur"
+                                >
+                                <span slot="noResult">Aucun responsable trouvée.</span>
+
+                            </multiselect>
+                            <span slot="invalid-feedback">{{ errorMsg('demandeur') }}</span>
+                        </b-form-group>
                     </b-form-row>
                     <b-form-row>
+                        <b-form-group label="Type d'info">
+                            <b-form-radio-group id="radios2" v-model="infoOrSanction">
+                                <b-form-radio value="info">Non disciplinaire</b-form-radio>
+                                <b-form-radio value="sanctionDecision">Disciplinaire</b-form-radio>
+                            </b-form-radio-group>
+                        </b-form-group>
+                    </b-form-row>
+                    <div v-if="infoOrSanction == 'info'">
+                        <b-form-row>
+                            <b-col>
+                                <b-form-group label="Info" label-for="input-info" :state="inputStates.info_id">
+                                    <b-form-select id="input-info" v-model="form.info_id" :options="infoOptions">
+                                        <template slot="first">
+                                            <option :value="null" disabled>Choisissez un type d'info</option>
+                                        </template>
+                                    </b-form-select>
+                                    <span slot="invalid-feedback">{{ errorMsg('info_id') }}</span>
+                                </b-form-group>
+                            </b-col>
+                        </b-form-row>
+                    </div>
+                    <div v-if="infoOrSanction == 'sanctionDecision'">
+                        <b-form-row>
+                            <b-col>
+                                <b-form-group label="Sanction et décision disciplinaire" label-for="input-info" :state="inputStates.sanction_decision_id">
+                                    <b-form-select id="input-info" v-model="form.sanction_decision_id" :options="sanctionDecisionOptions">
+                                        <template slot="first">
+                                            <option :value="null" disabled>Choisissez un type de sanction/décision</option>
+                                        </template>
+                                    </b-form-select>
+                                    <span slot="invalid-feedback">{{ errorMsg('sanction_decision_id') }}</span>
+                                </b-form-group>
+                            </b-col>
+                        </b-form-row>
+                    </div>
+
+                    <b-form-row v-if="infoOrSanction">
                         <b-col>
                             <b-form-group label="Commentaires" label-for="input-comment">
                                 <b-form-textarea id="input-comment" :rows="3" v-model="form.commentaire"></b-form-textarea>
@@ -111,14 +157,14 @@ export default {
                 visible_by_educ: true,
                 visible_by_tenure: false,
             },
-            timeMotifStart: null,
-            timeMotifEnd: null,
-            timeAppel: null,
+            infoOrSanction: null,
             infoOptions: [],
             sanctionDecisionOptions: [],
             name: {matricule: null},
             nameOptions: [],
             nameLoading: false,
+            demandeurOptions: [],
+            demandeurLoading: false,
             searchId: 0,
             errors: {},
             inputStates: {
@@ -197,7 +243,7 @@ export default {
 
             let modal = this;
             // Send data.
-            let token = { xsrfCookieName: 'csrftoken', xsrfHeaderName: 'X-CSRFToken'};
+            const token = { xsrfCookieName: 'csrftoken', xsrfHeaderName: 'X-CSRFToken'};
             axios.post('/appels/api/appel/', data, token)
             .then(response => {
                 this.hide();
@@ -208,15 +254,30 @@ export default {
             });
         },
         getNameOptions(query) {
+            return this.getPeopleOptions(query, 'student');
+        },
+        getDemandeurOptions(query) {
+            return this.getPeopleOptions(query, 'responsible');
+        },
+        getPeopleOptions(query, people) {
             this.searchId += 1;
             let currentSearch = this.searchId;
-            this.nameLoading = true;
-            axios.get("/annuaire/api/?query=" + query)
+            if (people == 'student') this.nameLoading = true;
+            if (people == 'responsible') this.demandeurLoading = true;
+
+            const token = { xsrfCookieName: 'csrftoken', xsrfHeaderName: 'X-CSRFToken'};
+            const data = {
+                query: query,
+                teachings: this.$store.state.settings.teachings,
+                people: people,
+                check_access: true,
+            };
+            axios.post('/annuaire/api/', data, token)
             .then(response => {
                 // Avoid that a previous search overwrites a faster following search results.
                 if (this.searchId !== currentSearch)
                     return;
-                this.nameOptions = response.data.map(p => {
+                const options = response.data.map(p => {
                     // Format entries.
                     let entry = {display: p.last_name + " " + p.first_name, matricule: p.matricule};
                     if ('classe' in p) {
@@ -233,12 +294,19 @@ export default {
                     }
                     return entry;
                 });
-                this.nameLoading = false;
+                if (people == 'student') {
+                    this.nameLoading = false;
+                    this.nameOptions = options;
+                } else if (people == 'responsible') {
+                    this.demandeurLoading = false;
+                    this.demandeurOptions = options;
+                }
             })
             .catch(function (error) {
                 this.nameLoading = false;
             });
         },
+
     },
     components: {Multiselect},
     mounted: function () {

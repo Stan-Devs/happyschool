@@ -24,31 +24,31 @@
                 <b-row class="entry-title">
                     <b-col>
                         <h5>{{ title }}
-                            <a href="#" @click="filterStudent">
+                            <b-btn variant="link" size="sm" @click="filterStudent">
                                 <icon name="filter" scale="1.2" class="align-text-middle"></icon>
-                            </a>
+                            </b-btn>
                         </h5>
                     </b-col>
                     <b-col sm="2">
-                        <p class="text-right">
+                        <div class="text-right">
                             <a href="#" v-on:click="editEntry"
                             class="card-link"><icon scale="1.3" name="edit" color="green"></icon></a>
                             <a href="#" v-on:click="deleteEntry"
-                            class="card-link"><icon scale="1.3" name="remove" color="red"></icon></a>
-                        </p>
+                            class="card-link"><icon scale="1.3" name="trash" color="red"></icon></a>
+                        </div>
                     </b-col>
                 </b-row>
                 <b-row class="entry-subtitle"><em>{{ subtitle }}</em></b-row>
                 <b-row class="text-center">
                     <b-col md="2" class="category">
                         <icon name="info" scale="1.2" v-if="isInfo" color="blue" class="align-text-bottom"></icon>
-                        <icon name="bell" scale="1.2" v-else color="green" class="align-text-bottom"></icon>
+                        <icon name="bell" scale="1.2" v-else color="red" class="align-text-bottom"></icon>
                         {{ category }}
                     </b-col>
                     <b-col class="current-data mb-1 mr-1">
                         <p>
                             {{ comment }}
-                            <a href="#" v-if="comment.length > 150" @click="expand = !expand">
+                            <b-btn size="sm" variant="light" v-if="comment.length > 150" @click="expand = !expand">
                                 <icon
                                     color="grey"
                                     class="align-text-top"
@@ -56,7 +56,7 @@
                                     :name="expand ? 'angle-double-up' : 'angle-double-down'"
                                     >
                                 </icon>
-                            </a>
+                            </b-btn>
                         </p>
                     </b-col>
                 </b-row>

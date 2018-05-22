@@ -50,5 +50,7 @@ urlpatterns = [
 
 router = DefaultRouter()
 router.register(r'api/cas_eleve', views.CasEleveViewSet)
+router.register(r'api/info', views.InfoViewSet)
+router.register(r'api/sanction_decision', views.SanctionDecisionViewSet)
 
 urlpatterns += router.urls

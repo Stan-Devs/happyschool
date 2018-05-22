@@ -198,9 +198,11 @@ class People:
                                                    | Q(last_name__unaccent__istartswith=name_part))
 
         if teaching and 'all' not in teaching:
-            people = people.filter(teaching__name__in=teaching)
+            if type(teaching[0]) == TeachingModel:
+                people = people.filter(teaching__in=teaching)
+            else:
+                people = people.filter(teaching__name__in=teaching)
 
-        len(people)
         if additional_filter:
             people = people.filter(**additional_filter)
 

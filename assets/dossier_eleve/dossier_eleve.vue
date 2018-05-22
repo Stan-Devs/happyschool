@@ -27,8 +27,8 @@
                 <b-col>
                     <b-form-group>
                         <div>
-                            <b-btn variant="outline-success" @click="openDynamicModal('add-modal')">
-                                <icon name="plus" scale="1" color="green"></icon>
+                            <b-btn variant="primary" @click="openDynamicModal('add-modal')">
+                                <icon name="plus" scale="1" class="align-middle"></icon>
                                 Nouveau cas
                             </b-btn>
                             <b-btn variant="outline-secondary" v-b-toggle.filters>
@@ -68,6 +68,7 @@
             <b-modal ref="deleteModal" cancel-title="Annuler" hide-header centered @ok="deleteEntry">
                 Êtes-vous sûr de vouloir supprimer définitivement cette entrée ?
             </b-modal>
+            <component v-bind:is="currentModal" ref="dynamicModal" @update="loadEntries"></component>
         </b-container>
     </div>
 </template>
@@ -86,6 +87,7 @@ window.axios.defaults.baseURL = window.location.origin; // In order to have http
 
 import Filters from '../common/filters.vue'
 import CasEleveEntry from './casEleveEntry.vue'
+import AddModal from './addModal.vue'
 
 export default {
     data: function () {
@@ -106,7 +108,7 @@ export default {
         },
         openDynamicModal: function (modal) {
             this.currentModal = modal;
-            // this.$refs.dynamicModal.show();
+            this.$refs.dynamicModal.show();
         },
         filterStudent: function (matricule) {
             this.showFilters = true;
@@ -155,6 +157,7 @@ export default {
     components: {
         'filters': Filters,
         'cas-eleve-entry': CasEleveEntry,
+        'add-modal': AddModal,
     }
 }
 </script>

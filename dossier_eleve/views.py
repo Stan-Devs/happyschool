@@ -33,6 +33,7 @@ import json
 
 from rest_framework.renderers import JSONRenderer
 from rest_framework.permissions import IsAuthenticated, DjangoModelPermissions
+from rest_framework.viewsets import ReadOnlyModelViewSet
 
 from django.views.generic import TemplateView
 from django.contrib.auth.mixins import PermissionRequiredMixin, LoginRequiredMixin
@@ -731,3 +732,13 @@ class CasEleveViewSet(BaseModelViewSet):
     permission_classes = (IsAuthenticated, DjangoModelPermissions,)
     filter_class = CasEleveFilter
     ordering_fields = ('datetime_encodage',)
+
+
+class InfoViewSet(ReadOnlyModelViewSet):
+    queryset = InfoEleve.objects.all()
+    serializer_class = InfoEleveSerializer
+
+
+class SanctionDecisionViewSet(ReadOnlyModelViewSet):
+    queryset = SanctionDecisionDisciplinaire.objects.all()
+    serializer_class = SanctionDecisionDisciplinaireSerializer

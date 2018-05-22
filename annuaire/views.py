@@ -434,7 +434,7 @@ class SearchPeopleAPI(APIView):
     def post(self, request, format=None):
         query = request.data['query']
         people_type = request.data['people']
-        teachings = request.data['teachings']
+        teachings = TeachingModel.objects.filter(id__in=request.data['teachings'])
         check_access = request.data['check_access']
 
         if len(query) < 2:
