@@ -46,6 +46,7 @@ urlpatterns = [
 #    url(r'^ajouter_malade$', views.ajouter_malade, name='ajouter_malade'),
 #    url(r'^encoder_sortie/(?P<passageId>[0-9]+)$', views.encoder_sortie, name='encoder_sortie'),
     path('test_vue', views.DossierEleveView.as_view()),
+    path('api/statistics/<int:matricule>/', views.StatisticAPI.as_view(), name='statistics'),
 ]
 
 router = DefaultRouter()

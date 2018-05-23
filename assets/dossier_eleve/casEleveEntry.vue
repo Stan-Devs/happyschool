@@ -149,7 +149,7 @@
     }
 
     .info {
-        background-color: rgba(191, 221, 255, 0.05) !important;
+        background-color: rgba(191, 221, 255, 0.1) !important;
     }
 
     .sanction_decision {

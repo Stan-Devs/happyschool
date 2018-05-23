@@ -105,7 +105,7 @@
                     </div>
                     <div v-if="infoOrSanction == 'sanctionDecision'">
                         <b-form-row>
-                            <b-col>
+                            <b-col sm="7">
                                 <b-form-group label="Sanction et décision disciplinaire" label-for="input-info" :state="inputStates.sanction_decision_id">
                                     <b-form-select id="input-info" v-model="form.sanction_decision_id" :options="sanctionDecisionOptions">
                                         <template slot="first">
@@ -114,6 +114,21 @@
                                     </b-form-select>
                                     <span slot="invalid-feedback">{{ errorMsg('sanction_decision_id') }}</span>
                                 </b-form-group>
+                                <b-form-group label="Date de la sanction" label-for="input-date-sanction" :state="inputStates.datetime_sanction">
+                                    <b-form-input id="input-date-sanction" type="date" v-model="form.datetime_sanction"></b-form-input>
+                                    <span slot="invalid-feedback">{{ errorMsg('datetime_sanction') }}</span>
+                                </b-form-group>
+                                <b-form-group label="Heure de la sanction" label-for="input-time-sanction">
+                                    <b-form-input id="input-time-sanction" type="time" :step="300" v-model="timeSanction"></b-form-input>
+                                </b-form-group>
+                            </b-col>
+                            <b-col sm="5">
+                                <b-list-group>
+                                    <b-list-group-item class="d-flex justify-content-between align-items-center"
+                                        v-for="(val, key) in stats" :key="key">
+                                        <strong>{{ val.display }} :</strong> {{ val.value }}
+                                    </b-list-group-item>
+                                </b-list-group>
                             </b-col>
                         </b-form-row>
                     </div>
@@ -166,6 +181,8 @@ export default {
             demandeurOptions: [],
             demandeurLoading: false,
             searchId: 0,
+            stats: {},
+            timeSanction: null,
             errors: {},
             inputStates: {
                 name: null,
@@ -177,8 +194,9 @@ export default {
     },
     computed: {
         photoPath: function () {
-            //TODO photo path
-            return "/static/photos/4721.jpg";
+            if (this.name.matricule)
+                return "/static/photos/" + name.matricule + ".jpg";
+            return "";
         }
     },
     watch: {
@@ -187,12 +205,15 @@ export default {
             if (this.name.matricule) {
                 // First update form name data.
                 this.form.name = this.name.display;
-                if (this.name.matricule < 10000 && this.name.matricule > 999) {
-                    // Student.
-                    this.form.matricule_id = this.name.matricule;
-                } else {
-                    this.form.matricule_id = null;
-                }
+                this.form.matricule_id = this.name.matricule;
+                // Get statistics.
+                axios.get('dossier_eleve/api/statistics/' + this.name.matricule + '/')
+                .then(response => {
+                    this.stats = JSON.parse(response.data);
+                })
+                .catch(function (error) {
+                    alert(error);
+                });
             }
         },
         errors: function (newErrors, oldErrors) {
@@ -223,8 +244,9 @@ export default {
                 return "";
             }
         },
-        addAppel: function (evt) {
+        addCas: function (evt) {
             evt.preventDefault();
+            return;
 
             let data = this.form;
             // Add times if any.
@@ -310,19 +332,26 @@ export default {
     },
     components: {Multiselect},
     mounted: function () {
-        // Set motive options.
+        // Set info options.
         axios.get('/dossier_eleve/api/info/')
         .then(response => {
             this.infoOptions = response.data.results.map(m => {
                 return {value: m.id, text: m.info};
             });
+        })
+        .catch(function (error) {
+            alert(error);
         });
-        // Set object options.
+
+        // Set sanctions and decisions options.
         axios.get('/dossier_eleve/api/sanction_decision/')
         .then(response => {
             this.sanctionDecisionOptions = response.data.results.map(m => {
                 return {value: m.id, text: m.sanction_decision};
             });
+        })
+        .catch(function (error) {
+            alert(error);
         });
     }
 }

@@ -48,7 +48,7 @@
                         </b-collapse>
                     </b-col>
             </b-row>
-            <b-pagination class="mt-1" :total-rows="entriesCount" v-model="currentPage" v-on:change="changePage">
+            <b-pagination class="mt-1" :total-rows="entriesCount" v-model="currentPage" @change="changePage" :per-page="20">
             </b-pagination>
             <b-card no-body class="current-card d-none d-md-block d-lg-block d-xl-block">
                 <b-row class="text-center">
@@ -92,7 +92,7 @@ import AddModal from './addModal.vue'
 export default {
     data: function () {
         return {
-            entriesCount: 20,
+            entriesCount: 0,
             currentPage: 1,
             entries: [],
             currentEntry: -1,
@@ -104,6 +104,8 @@ export default {
     },
     methods: {
         changePage: function (page) {
+            this.currentPage = page;
+            this.loadEntries();
             return;
         },
         openDynamicModal: function (modal) {
@@ -147,6 +149,7 @@ export default {
         loadEntries: function () {
             axios.get('/dossier_eleve/api/cas_eleve/?page=' + this.currentPage + this.filter + this.ordering)
             .then(response => {
+                this.entriesCount = response.data.count;
                 this.entries = response.data.results;
             });
         },

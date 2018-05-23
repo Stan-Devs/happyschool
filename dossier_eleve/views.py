@@ -34,6 +34,8 @@ import json
 from rest_framework.renderers import JSONRenderer
 from rest_framework.permissions import IsAuthenticated, DjangoModelPermissions
 from rest_framework.viewsets import ReadOnlyModelViewSet
+from rest_framework.views import APIView
+from rest_framework.response import Response
 
 from django.views.generic import TemplateView
 from django.contrib.auth.mixins import PermissionRequiredMixin, LoginRequiredMixin
@@ -687,6 +689,15 @@ def get_entries(request, column='name', ens='all'):
     return JsonResponse(entries, safe=False)
 
 
+def get_settings():
+    settings_dossier_eleve = SettingsModel.objects.first()
+    if not settings_dossier_eleve:
+        # Create default settings.
+        SettingsModel.objects.create().save()
+
+    return settings_dossier_eleve
+
+
 class DossierEleveView(LoginRequiredMixin,
                        PermissionRequiredMixin,
                        TemplateView):
@@ -702,14 +713,11 @@ class DossierEleveView(LoginRequiredMixin,
 
     def get_context_data(self, **kwargs):
         # Get settings.
-        settings = SettingsModel.objects.first()
-        if not settings:
-            # Create default settings.
-            SettingsModel.objects.create().save()
+        settings_dossier_eleve = get_settings()
 
         # Add to the current context.
         context = super().get_context_data(**kwargs)
-        context['settings'] = JSONRenderer().render(SettingsSerializer(settings).data).decode()
+        context['settings'] = JSONRenderer().render(SettingsSerializer(settings_dossier_eleve).data).decode()
         context['filters'] = json.dumps(self.filters)
         return context
 
@@ -726,7 +734,7 @@ class CasEleveFilter(BaseFilters):
 class CasEleveViewSet(BaseModelViewSet):
     queryset = CasEleve.objects.all()
     filter_access = True
-    all_access = SettingsModel.objects.first().all_access.all()
+    all_access = get_settings().all_access.all()
 
     serializer_class = CasEleveSerializer
     permission_classes = (IsAuthenticated, DjangoModelPermissions,)
@@ -742,3 +750,48 @@ class InfoViewSet(ReadOnlyModelViewSet):
 class SanctionDecisionViewSet(ReadOnlyModelViewSet):
     queryset = SanctionDecisionDisciplinaire.objects.all()
     serializer_class = SanctionDecisionDisciplinaireSerializer
+
+
+class StatisticAPI(APIView):
+    permission_classes = (IsAuthenticated,)
+
+    def get(self, request, matricule, format=None):
+        all_access = get_settings().all_access.all()
+        queryset = CasEleve.objects.all()
+        if not request.user.groups.intersection(all_access).exists():
+            teachings = ResponsibleModel.objects.get(user=self.request.user).teaching.all()
+            classes = get_classes(list(map(lambda t: t.name, teachings)), True, self.request.user)
+            queryset = queryset.filter(matricule__classe__in=classes)
+
+        current_scolar_year = get_scolar_year()
+        limit_date = timezone.make_aware(timezone.datetime(current_scolar_year, 8, 15))
+
+        cas_discip = queryset.filter(info=None, matricule=matricule)
+        cas_info = queryset.filter(sanction_decision=None, matricule=matricule,
+                                           datetime_encodage__gte=limit_date)
+
+        temps_midi = len(cas_discip.filter(sanction_decision__id=1))
+        retenue = len(cas_discip.filter(sanction_decision__id__in=SANCTIONS_RETENUE))
+        convoc = len(cas_discip.filter(sanction_decision__id=9)) + len(
+            cas_discip.filter(sanction_decision__id=10)) + len(
+            cas_discip.filter(sanction_decision__id=11)) + len(
+            cas_discip.filter(sanction_decision__id=12))
+        exclu = len(cas_discip.filter(sanction_decision__id=6)) + len(
+            cas_discip.filter(sanction_decision__id=7)) + len(
+            cas_discip.filter(sanction_decision__id=8))
+        renvoi = len(cas_discip.filter(sanction_decision__id=4)) + len(
+            cas_discip.filter(sanction_decision__id=3))
+        autre = len(cas_discip.filter(sanction_decision__id=14))
+
+        stats = {
+            'non_disciplinaire': {'display': 'Non disciplinaire', 'value': len(cas_info)},
+            'temps_midi': {'display': 'Temps de midi', 'value': temps_midi},
+            'retenue': {'display': 'Retenue', 'value': retenue},
+            'convoc': {'display': 'Convocation(s)', 'value': convoc},
+            'exclu': {'display': 'Exclusion(s)', 'value': exclu},
+            'renvoi': {'display': 'Renvoi(s)', 'value': renvoi},
+            'autre': {'display': 'Autres', 'value': autre},
+            'total': {'display': 'Total', 'value': len(cas_discip)},
+        }
+
+        return Response(json.dumps(stats))
