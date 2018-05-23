@@ -21,13 +21,14 @@
 <div>
     <b-modal size="lg" title="Nouveau cas"
         ok-title="Soumettre" cancel-title="Annuler"
+        :ok-disabled="!(form.info_id || form.sanction_decision_id)"
         ref="addModal"
         @ok="addCas" @hidden="resetModal"
         >
         <b-row>
             <b-col sm="4">
                 <div>
-                    <b-img rounded :src="photoPath" fluid alt="Responsive image" />
+                    <b-img rounded :src="'/static/photos/' + name.matricule + '.jpg'" fluid alt="Photo de l'élève" />
                 </div>
             </b-col>
             <b-col>
@@ -73,7 +74,7 @@
                                 deselect-label=""
                                 label="display"
                                 track-by="display"
-                                v-model="form.demandeur"
+                                v-model="demandeur"
                                 >
                                 <span slot="noResult">Aucun responsable trouvée.</span>
 
@@ -83,7 +84,7 @@
                     </b-form-row>
                     <b-form-row>
                         <b-form-group label="Type d'info">
-                            <b-form-radio-group id="radios2" v-model="infoOrSanction">
+                            <b-form-radio-group id="info-or-sanction" v-model="infoOrSanction">
                                 <b-form-radio value="info">Non disciplinaire</b-form-radio>
                                 <b-form-radio value="sanctionDecision">Disciplinaire</b-form-radio>
                             </b-form-radio-group>
@@ -135,8 +136,9 @@
 
                     <b-form-row v-if="infoOrSanction">
                         <b-col>
-                            <b-form-group label="Commentaires" label-for="input-comment">
-                                <b-form-textarea id="input-comment" :rows="3" v-model="form.commentaire"></b-form-textarea>
+                            <b-form-group label="Commentaires" label-for="input-comment" :state="inputStates.explication_commentaire">
+                                <b-form-textarea id="input-comment" :rows="3" v-model="form.explication_commentaire"></b-form-textarea>
+                                <span slot="invalid-feedback">{{ errorMsg('explication_commentaire') }}</span>
                             </b-form-group>
                         </b-col>
                     </b-form-row>
@@ -166,7 +168,7 @@ export default {
                 matricule_id: null,
                 info_id: null,
                 sanction_decision_id: null,
-                commentaire: "",
+                explication_commentaire: "",
                 is_important: false,
                 demandeur: "",
                 visible_by_educ: true,
@@ -178,6 +180,7 @@ export default {
             name: {matricule: null},
             nameOptions: [],
             nameLoading: false,
+            demandeur: {},
             demandeurOptions: [],
             demandeurLoading: false,
             searchId: 0,
@@ -191,13 +194,6 @@ export default {
                 demandeur: null,
             }
         };
-    },
-    computed: {
-        photoPath: function () {
-            if (this.name.matricule)
-                return "/static/photos/" + name.matricule + ".jpg";
-            return "";
-        }
     },
     watch: {
         name: function () {
@@ -214,6 +210,14 @@ export default {
                 .catch(function (error) {
                     alert(error);
                 });
+            }
+        },
+        infoOrSanction: function (newChoice) {
+            // Reset other part of the form (sanction_decision or info).
+            if (newChoice == 'info') {
+                this.form.sanction_decision_id = null;
+            } else {
+                this.form.info_id = null;
             }
         },
         errors: function (newErrors, oldErrors) {
@@ -235,7 +239,19 @@ export default {
             this.$refs.addModal.hide();
         },
         resetModal: function () {
-            //TODO resetModal()
+            this.name = {matricule: null};
+            this.infoOrSanction = null;
+            this.demandeur = {};
+
+            this.form.name = "";
+            this.form.matricule_id = null;
+            this.form.info_id = null;
+            this.form.sanction_decision_id = null;
+            this.form.explication_commentaire = "";
+            this.form.is_important = false;
+            this.form.demandeur = "";
+            this.form.visible_by_educ = true;
+            this.form.visible_by_tenure = false;
         },
         errorMsg(err) {
             if (err in this.errors) {
@@ -246,29 +262,21 @@ export default {
         },
         addCas: function (evt) {
             evt.preventDefault();
-            return;
 
+            this.form.demandeur = this.demandeur.display;
             let data = this.form;
             // Add times if any.
-            let time = this.timeMotifStart ? " " + this.timeMotifStart : " 12:00";
-            data.datetime_motif_start += time;
-            time = this.timeMotifEnd ? " " + this.timeMotifEnd : " 12:00";
-            data.datetime_motif_end += time;
-            time = this.timeAppel ? " " + this.timeAppel : " 12:00";
-            data.datetime_appel += time;
-            // if (this.timeMotifStart) data.datetime_motif_start += " " + this.timeMotifStart;
-            // if (this.timeMotifEnd) data.datetime_motif_end += " " + this.timeMotifEnd;
-            // if (this.timeAppel) data.datetime_appel += " " + this.timeAppel;
-
-            // Set is_student.
-            if (data.matricule_id) data.is_student = true;
+            if (data.datetime_sanction) {
+                let time = this.timeSanction ? " " + this.timeSanction : " 12:00";
+                data.datetime_sanction += time;
+            }
 
             let modal = this;
             // Send data.
             const token = { xsrfCookieName: 'csrftoken', xsrfHeaderName: 'X-CSRFToken'};
-            axios.post('/appels/api/appel/', data, token)
+            axios.post('/dossier_eleve/api/cas_eleve/', data, token)
             .then(response => {
-                this.hide();
+                // this.hide();
                 this.errors = {};
                 this.$emit('update');
             }).catch(function (error) {

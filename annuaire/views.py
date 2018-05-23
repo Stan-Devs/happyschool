@@ -451,10 +451,8 @@ class SearchPeopleAPI(APIView):
             people += People().get_educators_by_name(query, teachings)
 
         if people_type == 'student' or people_type == 'all':
-            print('coucou')
             classe_years = get_classes(teachings, check_access=True,
                                        user=request.user) if check_access == 1 else None
-            print(classe_years)
             people += People().get_students_by_name(query, teachings, classes=classe_years)
 
         return Response(map(self.serialize_people, people))

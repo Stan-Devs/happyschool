@@ -55,6 +55,8 @@ class CasEleveSerializer(serializers.ModelSerializer):
     sanction_decision_id = serializers.PrimaryKeyRelatedField(queryset=SanctionDecisionDisciplinaire.objects.all(),
                                                  source='sanction_decision', required=False,
                                                  allow_null=True)
+
     class Meta:
         model = CasEleve
-        fields = '__all__'
+        exclude = ('datetime_encodage',)
+        read_only_fields = ('user',)
