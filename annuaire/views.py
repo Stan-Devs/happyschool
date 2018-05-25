@@ -33,7 +33,7 @@ from unidecode import unidecode
 
 from core.people import People, get_classes
 from core.models import StudentModel, ClasseModel, TeachingModel, ResponsibleModel
-from core.serializers import StudentSerializer, ResponsibleSensitiveSerializer
+from core.serializers import StudentSerializer, ResponsibleSensitiveSerializer, ClasseSerializer
 
 # from core.Person import Person
 # from core.Student import Student
@@ -432,12 +432,12 @@ class SearchPeopleAPI(APIView):
         return Response(map(self.serialize_people, people))
 
     def post(self, request, format=None):
-        query = request.data['query']
-        people_type = request.data['people']
-        teachings = TeachingModel.objects.filter(id__in=request.data['teachings'])
-        check_access = request.data['check_access']
+        query = request.data.get('query', '')
+        people_type = request.data.get('people', 'all')
+        teachings = TeachingModel.objects.filter(id__in=request.data.get('teachings', []))
+        check_access = request.data.get('check_access', 0) == 1
 
-        if len(query) < 2:
+        if len(query) < 1:
             return Response([])
 
         people = []
@@ -452,7 +452,31 @@ class SearchPeopleAPI(APIView):
 
         if people_type == 'student' or people_type == 'all':
             classe_years = get_classes(teachings, check_access=True,
-                                       user=request.user) if check_access == 1 else None
+                                       user=request.user) if check_access else None
             people += People().get_students_by_name(query, teachings, classes=classe_years)
 
         return Response(map(self.serialize_people, people))
+
+
+class SearchClassesAPI(APIView):
+    permission_classes = (IsAuthenticated,)
+    parser_classes = (JSONParser,)
+
+    def post(self, request, format=None):
+        query = request.data.get('query', '')
+        teachings = TeachingModel.objects.filter(id__in=request.data.get('teachings', []))
+        check_access = request.data.get('check_access', 0) == 1
+
+        if len(query) == 0:
+            return Response([])
+
+        if not query[0].isdigit():
+            return Response([])
+
+        classes = get_classes(teaching=teachings, check_access=check_access, user=request.user)
+        classes = classes.filter(year=query[0]).order_by('year', 'letter')
+        if len(query) > 1:
+            classes = classes.filter(letter=query[1].lower())
+
+        serializer = ClasseSerializer(classes, many=True)
+        return Response(serializer.data)

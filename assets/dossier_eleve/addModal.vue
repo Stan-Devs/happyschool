@@ -192,6 +192,7 @@ export default {
                 info_id: null,
                 sanction_decision_id: null,
                 demandeur: null,
+                explication_commentaire: null,
             }
         };
     },
@@ -221,7 +222,7 @@ export default {
             }
         },
         errors: function (newErrors, oldErrors) {
-            let inputs = ['name', 'info_id', 'sanction_decision_id', 'demandeur',];
+            let inputs = ['name', 'info_id', 'sanction_decision_id', 'demandeur', 'explication_commentaire'];
             for (let u in inputs) {
                 if (inputs[u] in newErrors) {
                     this.inputStates[inputs[u]] = newErrors[inputs[u]].length == 0;
@@ -302,7 +303,7 @@ export default {
                 people: people,
                 check_access: true,
             };
-            axios.post('/annuaire/api/', data, token)
+            axios.post('/annuaire/api/people/', data, token)
             .then(response => {
                 // Avoid that a previous search overwrites a faster following search results.
                 if (this.searchId !== currentSearch)

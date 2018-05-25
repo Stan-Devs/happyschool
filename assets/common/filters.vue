@@ -110,6 +110,24 @@ export default {
 
             let param = {'page':1};
             param[this.filterType] = search;
+            if (this.filterType == 'classe') {
+                const token = {xsrfCookieName: 'csrftoken', xsrfHeaderName: 'X-CSRFToken'};
+                let data = {
+                    query: search,
+                    teachings: this.$store.state.settings.teachings,
+                    check_access: 1
+                }
+                axios.post('/annuaire/api/classes/', data, token)
+                .then(response => {
+                    this.filterSearchOptions = Array.from(response.data.map(i => ({
+                        'tag': i.display,
+                        'filterType': 'classe',
+                        'value': i.year + i.letter,
+                    })))
+                })
+                return;
+            }
+
             axios.get("/" + this.app + "/api/" + this.model + "/", {params: param})
             .then(response => {
                 let results = [];

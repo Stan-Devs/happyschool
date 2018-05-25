@@ -362,7 +362,10 @@ def get_classes(teaching: list={"default"}, check_access: bool=False, user: User
             return set()
 
     if "all" not in teaching:
-        return ClasseModel.objects.filter(teaching__name__in=teaching)
+        if type(teaching[0]) == TeachingModel:
+            return ClasseModel.objects.filter(teaching__in=teaching)
+        else:
+            return ClasseModel.objects.filter(teaching__name__in=teaching)
     else:
         return ClasseModel.objects.all()
 
@@ -381,7 +384,10 @@ def get_years(teaching: list={"default"}, check_access: bool=False, user: User=N
         teaching += get_default_teaching()
 
     if "all" not in teaching:
-        classes = ClasseModel.objects.filter(teaching__name__in=teaching)
+        if type(teaching[0]) == TeachingModel:
+            classes = ClasseModel.objects.filter(teaching__in=teaching)
+        else:
+            classes = ClasseModel.objects.filter(teaching__name__in=teaching)
     else:
         classes = ClasseModel.objects.all()
 

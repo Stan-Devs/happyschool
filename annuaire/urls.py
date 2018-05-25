@@ -18,6 +18,7 @@
 # along with HappySchool.  If not, see <http://www.gnu.org/licenses/>.
 
 from django.conf.urls import url
+from django.urls import path
 
 from . import views
 
@@ -41,5 +42,6 @@ urlpatterns = [
     url(r'^teacher/(?P<id>[0-9]+)/$', views.summary_teacher, name='summary_teacher'),
     url(r'^get_class_photo_pdf/(?P<year>[0-9]+)/(?P<classe>\w+)/(?P<enseignement>\w+)/$', views.get_class_photo_pdf,
         name="get_class_photo_pdf"),
-    url(r'^api/$', views.SearchPeopleAPI.as_view())
+    path('api/people/', views.SearchPeopleAPI.as_view()),
+    path('api/classes/', views.SearchClassesAPI.as_view()),
 ]

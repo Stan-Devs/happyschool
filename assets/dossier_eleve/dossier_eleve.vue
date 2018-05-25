@@ -19,7 +19,8 @@
 
 <template>
     <div>
-        <b-container>
+        <div class="loading" v-if="!loaded"></div>
+        <b-container v-if="loaded">
             <b-row>
                 <h2>Dossier des élèves</h2>
             </b-row>
@@ -100,6 +101,7 @@ export default {
             filter: "",
             ordering: "&ordering=-datetime_encodage",
             showFilters: false,
+            loaded: false,
         }
     },
     methods: {
@@ -151,6 +153,7 @@ export default {
             .then(response => {
                 this.entriesCount = response.data.count;
                 this.entries = response.data.results;
+                this.loaded = true;
             });
         },
     },
@@ -166,4 +169,15 @@ export default {
 </script>
 
 <style>
+.loading {
+  content: " ";
+  display: block;
+  position: absolute;
+  width: 80px;
+  height: 80px;
+  background-image: url(/static/img/spin.svg);
+  background-size: cover;
+  left: 50%;
+  top: 50%;
+}
 </style>

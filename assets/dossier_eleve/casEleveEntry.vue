@@ -88,7 +88,12 @@
                 return title;
             },
             subtitle: function () {
-                return "Demandé par " + this.rowData.demandeur + " (" + Moment(this.rowData.datetime_encodage).calendar() + ")";
+                let subtitle = "";
+                if (this.rowData.datetime_sanction) {
+                    subtitle += "Sanction : " + Moment(this.rowData.datetime_sanction).format('DD/MM/YY') + ". "
+                }
+                subtitle += "Demandé par " + this.rowData.demandeur + " (" + Moment(this.rowData.datetime_encodage).calendar() + ")"
+                return subtitle;
             },
             category: function() {
                 if (this.rowData.info)

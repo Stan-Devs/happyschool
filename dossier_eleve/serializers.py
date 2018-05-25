@@ -58,5 +58,5 @@ class CasEleveSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = CasEleve
-        exclude = ('datetime_encodage',)
-        read_only_fields = ('user',)
+        fields = '__all__'
+        read_only_fields = ('user', 'datetime_encodage',)

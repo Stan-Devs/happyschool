@@ -19,7 +19,7 @@
 
 from rest_framework import serializers
 
-from core.models import ResponsibleModel, StudentModel
+from core.models import *
 
 
 class ResponsibleSerializer(serializers.ModelSerializer):
@@ -41,3 +41,11 @@ class StudentSerializer(serializers.ModelSerializer):
         model = StudentModel
         fields = '__all__'
         depth = 1
+
+
+class ClasseSerializer(serializers.ModelSerializer):
+    display = serializers.CharField(source='__str__', read_only=True)
+
+    class Meta:
+        model = ClasseModel
+        fields = '__all__'

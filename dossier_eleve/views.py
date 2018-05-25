@@ -31,6 +31,8 @@ from django.core.exceptions import ObjectDoesNotExist
 # Vue app imports
 import json
 
+from django_filters import rest_framework as filters
+
 from rest_framework.renderers import JSONRenderer
 from rest_framework.permissions import IsAuthenticated, DjangoModelPermissions
 from rest_framework.viewsets import ReadOnlyModelViewSet
@@ -702,9 +704,10 @@ class DossierEleveView(LoginRequiredMixin,
                        PermissionRequiredMixin,
                        TemplateView):
     template_name = "dossier_eleve/dossier_eleve.html"
-    permission_required = ('dossier_eleve.can_access')
+    permission_required = ('dossier_eleve.access_dossier_eleve')
     filters = [
         {'value': 'name', 'text': 'Nom'},
+        {'value': 'classe', 'text': 'Classe'},
         {'value': 'info__info', 'text': 'Info'},
         {'value': 'sanction_decision__sanction_decision', 'text': 'Sanction/décision'},
         {'value': 'datetime_encodage', 'text': 'Date encodage'},
@@ -723,12 +726,30 @@ class DossierEleveView(LoginRequiredMixin,
 
 
 class CasEleveFilter(BaseFilters):
+    classe = filters.CharFilter(method='classe_by')
+
     class Meta:
         fields_to_filter = ('name', 'matricule_id', 'info__info', 'sanction_decision__sanction_decision',
-                            'datetime_encodage',)
+                            'datetime_encodage')
         model = CasEleve
         fields = BaseFilters.Meta.generate_filters(fields_to_filter)
         filter_overrides = BaseFilters.Meta.filter_overrides
+
+    def classe_by(self, queryset, name, value):
+        if not value[0].isdigit():
+            return queryset
+
+        all_access = get_settings().all_access.all()
+        if not self.request.user.groups.intersection(all_access).exists():
+            teachings = ResponsibleModel.objects.get(user=self.request.user).teaching.all()
+            classes = get_classes(list(map(lambda t: t.name, teachings)), True, self.request.user)
+            queryset = queryset.filter(matricule__classe__in=classes)
+
+        if len(value) > 0:
+            queryset = queryset.filter(matricule__classe__year=value[0])
+            if len(value) > 1:
+                queryset = queryset.filter(matricule__classe__letter=value[1].lower())
+        return queryset
 
 
 class CasEleveViewSet(BaseModelViewSet):
