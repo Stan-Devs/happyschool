@@ -45,6 +45,8 @@ from django.contrib.auth.mixins import PermissionRequiredMixin, LoginRequiredMix
 from core.views import BaseFilters, BaseModelViewSet
 
 from .serializers import *
+from .models import *
+from .tasks import task_send_email
 
 from z3c.rml import rml2pdf
 from io import BytesIO
@@ -722,6 +724,12 @@ class DossierEleveView(LoginRequiredMixin,
         context = super().get_context_data(**kwargs)
         context['settings'] = JSONRenderer().render(SettingsSerializer(settings_dossier_eleve).data).decode()
         context['filters'] = json.dumps(self.filters)
+        coords = []
+        for i in range(1, 7):
+            coords.append("coord" + str(i))
+        context['is_coord'] = json.dumps(self.request.user.groups.filter(
+            name__in=coords + ['direction', 'sysadmin']).exists())
+        context['is_educ'] = json.dumps(self.request.user.groups.filter(name__in=['educateur', 'sysadmin']).exists())
         return context
 
 
@@ -762,6 +770,24 @@ class CasEleveViewSet(BaseModelViewSet):
     filter_class = CasEleveFilter
     ordering_fields = ('datetime_encodage',)
 
+    def perform_create(self, serializer):
+        super().perform_create(serializer)
+
+        if serializer.validated_data['send_to_teachers']:
+            task_send_email.apply_async(
+                countdown=1,
+                kwargs={'instance': serializer.save()}
+            )
+
+    def perform_update(self, serializer):
+        super().perform_update(serializer)
+
+        if serializer.validated_data['send_to_teachers']:
+            task_send_email.apply_async(
+                countdown=1,
+                kwargs={'instance_id': serializer.save().id}
+            )
+
 
 class InfoViewSet(ReadOnlyModelViewSet):
     queryset = InfoEleve.objects.all()
@@ -779,6 +805,7 @@ class StatisticAPI(APIView):
     def get(self, request, matricule, format=None):
         all_access = get_settings().all_access.all()
         queryset = CasEleve.objects.all()
+        only_sanctions = request.GET.get('only_sanctions', 1) == 1
         if not request.user.groups.intersection(all_access).exists():
             teachings = ResponsibleModel.objects.get(user=self.request.user).teaching.all()
             classes = get_classes(list(map(lambda t: t.name, teachings)), True, self.request.user)
@@ -791,28 +818,18 @@ class StatisticAPI(APIView):
         cas_info = queryset.filter(sanction_decision=None, matricule=matricule,
                                            datetime_encodage__gte=limit_date)
 
-        temps_midi = len(cas_discip.filter(sanction_decision__id=1))
-        retenue = len(cas_discip.filter(sanction_decision__id__in=SANCTIONS_RETENUE))
-        convoc = len(cas_discip.filter(sanction_decision__id=9)) + len(
-            cas_discip.filter(sanction_decision__id=10)) + len(
-            cas_discip.filter(sanction_decision__id=11)) + len(
-            cas_discip.filter(sanction_decision__id=12))
-        exclu = len(cas_discip.filter(sanction_decision__id=6)) + len(
-            cas_discip.filter(sanction_decision__id=7)) + len(
-            cas_discip.filter(sanction_decision__id=8))
-        renvoi = len(cas_discip.filter(sanction_decision__id=4)) + len(
-            cas_discip.filter(sanction_decision__id=3))
-        autre = len(cas_discip.filter(sanction_decision__id=14))
+        sanctions = SanctionStatisticsModel.objects.all()
 
-        stats = {
-            'non_disciplinaire': {'display': 'Non disciplinaire', 'value': len(cas_info)},
-            'temps_midi': {'display': 'Temps de midi', 'value': temps_midi},
-            'retenue': {'display': 'Retenue', 'value': retenue},
-            'convoc': {'display': 'Convocation(s)', 'value': convoc},
-            'exclu': {'display': 'Exclusion(s)', 'value': exclu},
-            'renvoi': {'display': 'Renvoi(s)', 'value': renvoi},
-            'autre': {'display': 'Autres', 'value': autre},
-            'total': {'display': 'Total', 'value': len(cas_discip)},
-        }
+        stats = []
+        for s in sanctions:
+            stat = {
+                'display': s.display,
+                'value': len(cas_discip.filter(sanction_decision__in=s.sanctions_decisions.all()))
+            }
+            stats.append(stat)
+
+        if not only_sanctions:
+            stats.append({'display': 'Non disciplinaire', 'value': len(cas_info)})
+            stats.append({'display': 'Total disciplinaire', 'value': len(cas_discip)})
 
         return Response(json.dumps(stats))

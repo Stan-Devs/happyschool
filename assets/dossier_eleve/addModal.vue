@@ -83,10 +83,15 @@
                         </b-form-group>
                     </b-form-row>
                     <b-form-row>
+                        <b-form-checkbox v-model="form.important">
+                            Marquer comme important.
+                        </b-form-checkbox>
+                    </b-form-row>
+                    <b-form-row>
                         <b-form-group label="Type d'info">
-                            <b-form-radio-group id="info-or-sanction" v-model="infoOrSanction">
+                            <b-form-radio-group id="info-or-sanction" v-model="infoOrSanction" :disabled="entry ? true : false">
                                 <b-form-radio value="info">Non disciplinaire</b-form-radio>
-                                <b-form-radio value="sanctionDecision">Disciplinaire</b-form-radio>
+                                <b-form-radio value="sanction-decision">Disciplinaire</b-form-radio>
                             </b-form-radio-group>
                         </b-form-group>
                     </b-form-row>
@@ -104,7 +109,7 @@
                             </b-col>
                         </b-form-row>
                     </div>
-                    <div v-if="infoOrSanction == 'sanctionDecision'">
+                    <div v-if="infoOrSanction == 'sanction-decision'">
                         <b-form-row>
                             <b-col sm="7">
                                 <b-form-group label="Sanction et décision disciplinaire" label-for="input-info" :state="inputStates.sanction_decision_id">
@@ -120,20 +125,19 @@
                                     <span slot="invalid-feedback">{{ errorMsg('datetime_sanction') }}</span>
                                 </b-form-group>
                                 <b-form-group label="Heure de la sanction" label-for="input-time-sanction">
-                                    <b-form-input id="input-time-sanction" type="time" :step="300" v-model="timeSanction"></b-form-input>
+                                    <b-form-input id="input-time-sanction" type="time" v-model="timeSanction"></b-form-input>
                                 </b-form-group>
                             </b-col>
                             <b-col sm="5">
                                 <b-list-group>
                                     <b-list-group-item class="d-flex justify-content-between align-items-center"
-                                        v-for="(val, key) in stats" :key="key">
+                                        v-for="(val, index) in stats" :key="index">
                                         <strong>{{ val.display }} :</strong> {{ val.value }}
                                     </b-list-group-item>
                                 </b-list-group>
                             </b-col>
                         </b-form-row>
                     </div>
-
                     <b-form-row v-if="infoOrSanction">
                         <b-col>
                             <b-form-group label="Commentaires" label-for="input-comment" :state="inputStates.explication_commentaire">
@@ -141,6 +145,20 @@
                                 <span slot="invalid-feedback">{{ errorMsg('explication_commentaire') }}</span>
                             </b-form-group>
                         </b-col>
+                    </b-form-row>
+                    <b-form-row v-if="infoOrSanction == 'info'">
+                        <b-form-group label="Visibilité">
+                                <b-form-checkbox v-model="form.visible_by_educ" :disabled="!coord">
+                                    Visible par les éducateurs
+                                </b-form-checkbox>
+                                <b-form-checkbox v-model="form.visible_by_tenure" :disabled="!educ && !coord">
+                                    Visible par les titulaires
+                                </b-form-checkbox>
+                        </b-form-group>
+                        <b-form-checkbox v-model="form.send_to_teachers" :disabled="!educ && !coord">
+                            Envoyer l'info par email aux professeurs de la classe de l'élève.
+                        </b-form-checkbox>
+
                     </b-form-row>
                 </b-form>
             </b-col>
@@ -161,6 +179,7 @@ window.axios = axios;
 window.axios.defaults.baseURL = window.location.origin; // In order to have httpS.
 
 export default {
+    props: ['entry'],
     data: function () {
         return {
             form: {
@@ -169,10 +188,12 @@ export default {
                 info_id: null,
                 sanction_decision_id: null,
                 explication_commentaire: "",
-                is_important: false,
+                important: false,
                 demandeur: "",
-                visible_by_educ: true,
+                visible_by_educ: false,
                 visible_by_tenure: false,
+                datetime_sanction: null,
+                send_to_teachers: false,
             },
             infoOrSanction: null,
             infoOptions: [],
@@ -193,7 +214,9 @@ export default {
                 sanction_decision_id: null,
                 demandeur: null,
                 explication_commentaire: null,
-            }
+            },
+            coord: false,
+            educ: false,
         };
     },
     watch: {
@@ -230,7 +253,35 @@ export default {
                     this.inputStates[inputs[u]] = null;
                 }
             }
-        }
+        },
+        entry: function (entry, oldEntry) {
+            if (entry) {
+                // The name will update form.name and form.matricule_id
+                this.name = {
+                    display: entry.name,
+                    matricule: entry.matricule_id,
+                }
+                this.demandeur = {
+                    display: entry.demandeur,
+                }
+                this.form.explication_commentaire = entry.explication_commentaire;
+                this.form.info_id = entry.info_id;
+                this.form.important = entry.important;
+                this.form.visible_by_educ = entry.visible_by_educ;
+                this.form.visible_by_tenure = entry.visible_by_tenure;
+
+                this.form.sanction_decision_id = entry.sanction_decision_id;
+                if (entry.datetime_sanction) {
+                    let datetime = Moment(entry.datetime_sanction);
+                    this.form.datetime_sanction = datetime.format('YYYY-MM-DD');
+                    this.timeSanction = datetime.format('HH:MM');
+                }
+
+                this.infoOrSanction = entry.info_id ? 'info' : 'sanction-decision';
+            } else {
+                this.resetModal();
+            }
+        },
     },
     methods: {
         show: function () {
@@ -240,6 +291,8 @@ export default {
             this.$refs.addModal.hide();
         },
         resetModal: function () {
+            this.$emit('reset');
+
             this.name = {matricule: null};
             this.infoOrSanction = null;
             this.demandeur = {};
@@ -249,10 +302,12 @@ export default {
             this.form.info_id = null;
             this.form.sanction_decision_id = null;
             this.form.explication_commentaire = "";
-            this.form.is_important = false;
+            this.form.important = false;
             this.form.demandeur = "";
-            this.form.visible_by_educ = true;
-            this.form.visible_by_tenure = false;
+            this.form.visible_by_educ = !this.coord;
+            this.form.visible_by_tenure = !this.educ && !this.coord;
+            this.form.datetime_sanction = null;
+            this.form.send_to_teachers = false;
         },
         errorMsg(err) {
             if (err in this.errors) {
@@ -275,9 +330,13 @@ export default {
             let modal = this;
             // Send data.
             const token = { xsrfCookieName: 'csrftoken', xsrfHeaderName: 'X-CSRFToken'};
-            axios.post('/dossier_eleve/api/cas_eleve/', data, token)
-            .then(response => {
-                // this.hide();
+
+            let path = '/dossier_eleve/api/cas_eleve/'
+            if (this.entry) path += this.entry.id + '/'
+            const send = this.entry ? axios.put(path, data, token) : axios.post(path, data, token);
+
+            send.then(response => {
+                this.hide();
                 this.errors = {};
                 this.$emit('update');
             }).catch(function (error) {
@@ -291,6 +350,7 @@ export default {
             return this.getPeopleOptions(query, 'responsible');
         },
         getPeopleOptions(query, people) {
+            let app = this;
             this.searchId += 1;
             let currentSearch = this.searchId;
             if (people == 'student') this.nameLoading = true;
@@ -334,13 +394,20 @@ export default {
                 }
             })
             .catch(function (error) {
-                this.nameLoading = false;
+                alert(error);
+                app.nameLoading = false;
             });
         },
 
     },
     components: {Multiselect},
     mounted: function () {
+        // Set policies.
+        this.coord = is_coord;
+        this.educ = is_educ;
+        this.form.visible_by_educ = !this.coord;
+        this.form.visible_by_tenure = !this.educ && !this.coord;
+
         // Set info options.
         axios.get('/dossier_eleve/api/info/')
         .then(response => {

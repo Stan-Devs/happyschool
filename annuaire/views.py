@@ -394,42 +394,62 @@ def get_class_photo_pdf(request, year, classe, enseignement):
     return response
 
 
-class SearchPeopleAPI(APIView):
-    permission_classes = (IsAuthenticated,)
-    parser_classes = (JSONParser,)
+def search_classes(query, teachings, check_access, user):
+    if len(query) == 0:
+        return []
 
-    @staticmethod
+    if not query[0].isdigit():
+        return []
+
+    classes = get_classes(teaching=teachings, check_access=check_access, user=user)
+    classes = classes.filter(year=query[0]).order_by('year', 'letter')
+    if len(query) > 1:
+        classes = classes.filter(letter=query[1].lower())
+
+    return ClasseSerializer(classes, many=True).data
+
+
+def search_people(query, people_type, teachings, check_access, user):
     def serialize_people(person):
         if type(person) == StudentModel:
             return StudentSerializer(person).data
         elif type(person) == ResponsibleModel:
             return ResponsibleSensitiveSerializer(person).data
 
+    if len(query) < 1:
+        return []
+
+    people = []
+    if people_type == 'responsible' or people_type == 'all':
+        people += People().get_responsibles_by_name(query, teachings)
+
+    if people_type == 'teacher':
+        people += People().get_teachers_by_name(query, teachings)
+
+    if people_type == 'educator':
+        people += People().get_educators_by_name(query, teachings)
+
+    if people_type == 'student' or people_type == 'all':
+        classe_years = get_classes(teachings, check_access=True,
+                                   user=user) if check_access else None
+        people += People().get_students_by_name(query, teachings, classes=classe_years)
+
+    return map(serialize_people, people)
+
+
+class SearchPeopleAPI(APIView):
+    permission_classes = (IsAuthenticated,)
+    parser_classes = (JSONParser,)
+
     def get(self, request, format=None):
         query = request.GET.get('query', '')
         people_type = request.GET.get('people', 'all')
-        teaching = request.GET.get('teaching', 'all')
-        check_access = request.GET.get('check_access', '0')
+        teachings = request.GET.get('teaching', 'all')
+        check_access = request.GET.get('check_access', '0') == 1
 
-        if len(query) < 2:
-            return Response([])
-
-        people = []
-        if people_type == 'responsible' or people_type == 'all':
-            people += People().get_responsibles_by_name(query, [teaching])
-
-        if people_type == 'teacher':
-            people += People().get_teachers_by_name(query, [teaching])
-
-        if people_type == 'educator':
-            people += People().get_educators_by_name(query, [teaching])
-
-        if people_type == 'student' or people_type == 'all':
-            classe_years = get_classes([teaching], check_access=True,
-                                       user=request.user) if check_access == '1' else None
-            people += People().get_students_by_name(query, [teaching], classes=classe_years)
-
-        return Response(map(self.serialize_people, people))
+        people = search_people(query=query, people_type=people_type, teachings=teachings,
+                               check_access=check_access, user=request.user)
+        return Response(people)
 
     def post(self, request, format=None):
         query = request.data.get('query', '')
@@ -437,25 +457,9 @@ class SearchPeopleAPI(APIView):
         teachings = TeachingModel.objects.filter(id__in=request.data.get('teachings', []))
         check_access = request.data.get('check_access', 0) == 1
 
-        if len(query) < 1:
-            return Response([])
-
-        people = []
-        if people_type == 'responsible' or people_type == 'all':
-            people += People().get_responsibles_by_name(query, teachings)
-
-        if people_type == 'teacher':
-            people += People().get_teachers_by_name(query, teachings)
-
-        if people_type == 'educator':
-            people += People().get_educators_by_name(query, teachings)
-
-        if people_type == 'student' or people_type == 'all':
-            classe_years = get_classes(teachings, check_access=True,
-                                       user=request.user) if check_access else None
-            people += People().get_students_by_name(query, teachings, classes=classe_years)
-
-        return Response(map(self.serialize_people, people))
+        people = search_people(query=query, people_type=people_type, teachings=teachings,
+                               check_access=check_access, user=request.user)
+        return Response(people)
 
 
 class SearchClassesAPI(APIView):
@@ -467,16 +471,28 @@ class SearchClassesAPI(APIView):
         teachings = TeachingModel.objects.filter(id__in=request.data.get('teachings', []))
         check_access = request.data.get('check_access', 0) == 1
 
+        classes = search_classes(query=query, teachings=teachings,
+                                 check_access=check_access, user=request.user)
+        return Response(classes)
+
+
+class SearchClassesOrPeopleAPI(APIView):
+    permission_classes = (IsAuthenticated,)
+    parser_classes = (JSONParser,)
+
+    def post(self, request, format=None):
+        query = request.data.get('query', '')
+        people_type = request.data.get('people', 'student')
+        teachings = TeachingModel.objects.filter(id__in=request.data.get('teachings', []))
+        check_access = request.data.get('check_access', 0) == 1
+
         if len(query) == 0:
             return Response([])
 
-        if not query[0].isdigit():
-            return Response([])
+        if query[0].isdigit():
+            return Response(search_classes(query=query, teachings=teachings,
+                                           check_access=check_access, user=request.user))
 
-        classes = get_classes(teaching=teachings, check_access=check_access, user=request.user)
-        classes = classes.filter(year=query[0]).order_by('year', 'letter')
-        if len(query) > 1:
-            classes = classes.filter(letter=query[1].lower())
-
-        serializer = ClasseSerializer(classes, many=True)
-        return Response(serializer.data)
+        people = search_people(query=query, people_type=people_type, teachings=teachings,
+                               check_access=check_access, user=request.user)
+        return Response(people)

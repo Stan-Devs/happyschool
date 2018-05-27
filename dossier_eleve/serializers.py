@@ -42,6 +42,8 @@ class SanctionDecisionDisciplinaireSerializer(serializers.ModelSerializer):
 
 
 class CasEleveSerializer(serializers.ModelSerializer):
+    send_to_teachers = serializers.BooleanField(write_only=True)
+
     matricule = StudentSerializer(read_only=True)
     matricule_id = serializers.PrimaryKeyRelatedField(queryset=StudentModel.objects.all(),
                                                       source='matricule', required=False,

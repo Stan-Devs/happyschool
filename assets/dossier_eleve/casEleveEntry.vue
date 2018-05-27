@@ -31,10 +31,10 @@
                     </b-col>
                     <b-col sm="2">
                         <div class="text-right">
-                            <a href="#" v-on:click="editEntry"
-                            class="card-link"><icon scale="1.3" name="edit" color="green"></icon></a>
-                            <a href="#" v-on:click="deleteEntry"
-                            class="card-link"><icon scale="1.3" name="trash" color="red"></icon></a>
+                            <b-btn variant="light" size="sm" @click="editEntry"
+                            class="card-link"><icon scale="1.3" name="edit" color="green" class="align-text-bottom"></icon></b-btn>
+                            <b-btn variant="light" size="sm" @click="deleteEntry"
+                            class="card-link"><icon scale="1.3" name="trash" color="red" class="align-text-bottom"></icon></b-btn>
                         </div>
                     </b-col>
                 </b-row>
@@ -71,7 +71,6 @@
     export default {
         props: {
             rowData : {type: Object},
-            deleting: {type: Boolean, default: false}
         },
         data: function () {
             return {

@@ -61,15 +61,20 @@
                 v-for="(entry, index) in entries"
                 v-bind:key="entry.id"
                 v-bind:row-data="entry"
-                @delete="askDelete(entry.id)"
+                @delete="askDelete(entry)"
                 @edit="editEntry(index)"
                 @filterStudent="filterStudent($event)"
                 >
             </cas-eleve-entry>
-            <b-modal ref="deleteModal" cancel-title="Annuler" hide-header centered @ok="deleteEntry">
+            <b-modal ref="deleteModal" cancel-title="Annuler" hide-header centered
+                @ok="deleteEntry" @cancel="currentEntry = null">
                 Êtes-vous sûr de vouloir supprimer définitivement cette entrée ?
             </b-modal>
-            <component v-bind:is="currentModal" ref="dynamicModal" @update="loadEntries"></component>
+            <component
+                v-bind:is="currentModal" ref="dynamicModal"
+                @update="loadEntries" @reset="currentEntry = null"
+                :entry="currentEntry">
+            </component>
         </b-container>
     </div>
 </template>
@@ -96,7 +101,7 @@ export default {
             entriesCount: 0,
             currentPage: 1,
             entries: [],
-            currentEntry: -1,
+            currentEntry: null,
             currentModal: 'add-modal',
             filter: "",
             ordering: "&ordering=-datetime_encodage",
@@ -124,7 +129,6 @@ export default {
         applyFilter: function () {
             this.filter = "";
             let storeFilters = this.$store.state.filters
-            console.log(storeFilters);
             for (let f in storeFilters) {
                 if (storeFilters[f].filterType.startsWith("date")
                     || storeFilters[f].filterType.startsWith("time")) {
@@ -135,18 +139,25 @@ export default {
                     this.filter += "&" + storeFilters[f].filterType + "=" + storeFilters[f].value;
                 }
             }
+            this.currentPage = 1;
             this.loadEntries();
         },
-        askDelete: function (id) {
-            this.currentEntry = id;
+        askDelete: function (entry) {
+            this.currentEntry = entry;
             this.$refs.deleteModal.show();
+        },
+        editEntry: function(index) {
+            this.currentEntry = this.entries[index];
+            this.openDynamicModal('add-modal');
         },
         deleteEntry: function () {
             const token = { xsrfCookieName: 'csrftoken', xsrfHeaderName: 'X-CSRFToken'};
-            axios.delete('/dossier_eleve/api/cas_eleve/' + this.currentEntry + '/', token)
+            axios.delete('/dossier_eleve/api/cas_eleve/' + this.currentEntry.id + '/', token)
             .then(response => {
                 this.loadEntries();
             });
+
+            this.currentEntry = null;
         },
         loadEntries: function () {
             axios.get('/dossier_eleve/api/cas_eleve/?page=' + this.currentPage + this.filter + this.ordering)

@@ -44,4 +44,5 @@ urlpatterns = [
         name="get_class_photo_pdf"),
     path('api/people/', views.SearchPeopleAPI.as_view()),
     path('api/classes/', views.SearchClassesAPI.as_view()),
+    path('api/people_or_classes/', views.SearchClassesOrPeopleAPI.as_view()),
 ]

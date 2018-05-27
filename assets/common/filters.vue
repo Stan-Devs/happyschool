@@ -108,7 +108,7 @@ export default {
                 return;
             }
 
-            let param = {'page':1};
+            let param = {'unique': this.filterType};
             param[this.filterType] = search;
             if (this.filterType == 'classe') {
                 const token = {xsrfCookieName: 'csrftoken', xsrfHeaderName: 'X-CSRFToken'};
@@ -127,6 +127,7 @@ export default {
                 })
                 return;
             }
+
 
             axios.get("/" + this.app + "/api/" + this.model + "/", {params: param})
             .then(response => {
