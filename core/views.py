@@ -1,7 +1,7 @@
 from rest_framework.filters import OrderingFilter
 from rest_framework.viewsets import ModelViewSet
-from rest_framework.generics import GenericAPIView, ListCreateAPIView, RetrieveUpdateDestroyAPIView
-from rest_framework.mixins import ListModelMixin, UpdateModelMixin, CreateModelMixin, DestroyModelMixin
+from rest_framework.views import APIView
+from rest_framework.response import Response
 from rest_framework.permissions import DjangoModelPermissions, IsAuthenticated
 from django.contrib.auth.mixins import PermissionRequiredMixin, LoginRequiredMixin
 
@@ -15,7 +15,7 @@ from core.models import ResponsibleModel
 from core.people import get_classes
 from core.permissions import IsSecretaryPermission
 from core.serializers import ResponsibleSerializer
-
+from core.utilities import get_scolar_year
 
 class BaseFilters(filters.FilterSet):
     unique = filters.CharFilter('unique_by', method='unique_by')
@@ -92,3 +92,18 @@ class MembersAPI(ModelViewSet):
             return ResponsibleModel.objects.filter(is_teacher=False, is_educator=False, is_secretary=False)
         else:
             return ResponsibleModel.objects.filter(is_teacher=False, is_educator=False)
+
+
+class ScholarYearAPI(APIView):
+    permission_classes = (IsAuthenticated,)
+
+    def get(self, request, format=None):
+        query = request.GET.get('scholar_year', '')
+        if not query:
+            return Response([])
+
+        current_year = get_scolar_year()
+        options = []
+        for y in range(current_year - 10, current_year + 1):
+            options.append("%i-%i" % (y, y + 1))
+        return Response(options)

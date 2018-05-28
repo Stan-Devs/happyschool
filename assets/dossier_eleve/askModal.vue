@@ -21,9 +21,9 @@
 <div>
     <b-modal size="lg" title="Nouveau cas"
         ok-title="Soumettre" cancel-title="Annuler"
-        :ok-disabled="!(form.info_id || form.sanction_decision_id)"
-        ref="addModal"
-        @ok="addCas" @hidden="resetModal"
+        :ok-disabled="!form.sanction_decision_id"
+        ref="askModal"
+        @ok="askSanction" @hidden="resetModal"
         >
         <b-row>
             <b-col sm="4">
@@ -87,78 +87,44 @@
                             Marquer comme important.
                         </b-form-checkbox>
                     </b-form-row>
-                    <b-form-row>
-                        <b-form-group label="Type d'info">
-                            <b-form-radio-group id="info-or-sanction" v-model="infoOrSanction" :disabled="entry ? true : false">
-                                <b-form-radio value="info">Non disciplinaire</b-form-radio>
-                                <b-form-radio value="sanction-decision">Disciplinaire</b-form-radio>
-                            </b-form-radio-group>
-                        </b-form-group>
+                    <b-form-row class="mt-2">
+                        <b-col sm="7">
+                            <b-form-group label="Sanction et décision disciplinaire" label-for="input-info" :state="inputStates.sanction_decision_id">
+                                <b-form-select id="input-info" v-model="form.sanction_decision_id" :options="sanctionOptions">
+                                    <template slot="first">
+                                        <option :value="null" disabled>Choisissez un type de sanction</option>
+                                    </template>
+                                </b-form-select>
+                                <span slot="invalid-feedback">{{ errorMsg('sanction_decision_id') }}</span>
+                            </b-form-group>
+                            <b-form-group label="Date du conseil" label-for="input-date-conseil" :state="inputStates.datetime_conseil">
+                                <b-form-input id="input-date-conseil" type="date" v-model="form.datetime_conseil"></b-form-input>
+                                <span slot="invalid-feedback">{{ errorMsg('datetime_conseil') }}</span>
+                            </b-form-group>
+                            <b-form-group label="Date de la sanction" label-for="input-date-sanction" :state="inputStates.datetime_sanction">
+                                <b-form-input id="input-date-sanction" type="date" v-model="form.datetime_sanction"></b-form-input>
+                                <span slot="invalid-feedback">{{ errorMsg('datetime_sanction') }}</span>
+                            </b-form-group>
+                            <b-form-group label="Heure de la sanction" label-for="input-time-sanction">
+                                <b-form-input id="input-time-sanction" type="time" v-model="timeSanction"></b-form-input>
+                            </b-form-group>
+                        </b-col>
+                        <b-col sm="5">
+                            <b-list-group>
+                                <b-list-group-item class="d-flex justify-content-between align-items-center"
+                                    v-for="(val, index) in stats" :key="index">
+                                    <strong>{{ val.display }} :</strong> {{ val.value }}
+                                </b-list-group-item>
+                            </b-list-group>
+                        </b-col>
                     </b-form-row>
-                    <div v-if="infoOrSanction == 'info'">
-                        <b-form-row>
-                            <b-col>
-                                <b-form-group label="Info" label-for="input-info" :state="inputStates.info_id">
-                                    <b-form-select id="input-info" v-model="form.info_id" :options="infoOptions">
-                                        <template slot="first">
-                                            <option :value="null" disabled>Choisissez un type d'info</option>
-                                        </template>
-                                    </b-form-select>
-                                    <span slot="invalid-feedback">{{ errorMsg('info_id') }}</span>
-                                </b-form-group>
-                            </b-col>
-                        </b-form-row>
-                    </div>
-                    <div v-if="infoOrSanction == 'sanction-decision'">
-                        <b-form-row>
-                            <b-col sm="7">
-                                <b-form-group label="Sanction et décision disciplinaire" label-for="input-info" :state="inputStates.sanction_decision_id">
-                                    <b-form-select id="input-info" v-model="form.sanction_decision_id" :options="sanctionDecisionOptions">
-                                        <template slot="first">
-                                            <option :value="null" disabled>Choisissez un type de sanction/décision</option>
-                                        </template>
-                                    </b-form-select>
-                                    <span slot="invalid-feedback">{{ errorMsg('sanction_decision_id') }}</span>
-                                </b-form-group>
-                                <b-form-group label="Date de la sanction" label-for="input-date-sanction" :state="inputStates.datetime_sanction">
-                                    <b-form-input id="input-date-sanction" type="date" v-model="form.datetime_sanction"></b-form-input>
-                                    <span slot="invalid-feedback">{{ errorMsg('datetime_sanction') }}</span>
-                                </b-form-group>
-                                <b-form-group label="Heure de la sanction" label-for="input-time-sanction">
-                                    <b-form-input id="input-time-sanction" type="time" v-model="timeSanction"></b-form-input>
-                                </b-form-group>
-                            </b-col>
-                            <b-col sm="5">
-                                <b-list-group>
-                                    <b-list-group-item class="d-flex justify-content-between align-items-center"
-                                        v-for="(val, index) in stats" :key="index">
-                                        <strong>{{ val.display }} :</strong> {{ val.value }}
-                                    </b-list-group-item>
-                                </b-list-group>
-                            </b-col>
-                        </b-form-row>
-                    </div>
-                    <b-form-row v-if="infoOrSanction">
+                    <b-form-row>
                         <b-col>
                             <b-form-group label="Commentaires" label-for="input-comment" :state="inputStates.explication_commentaire">
                                 <b-form-textarea id="input-comment" :rows="3" v-model="form.explication_commentaire"></b-form-textarea>
                                 <span slot="invalid-feedback">{{ errorMsg('explication_commentaire') }}</span>
                             </b-form-group>
                         </b-col>
-                    </b-form-row>
-                    <b-form-row v-if="infoOrSanction == 'info'">
-                        <b-form-group label="Visibilité">
-                                <b-form-checkbox v-model="form.visible_by_educ" :disabled="!coord">
-                                    Visible par les éducateurs
-                                </b-form-checkbox>
-                                <b-form-checkbox v-model="form.visible_by_tenure" :disabled="!educ && !coord">
-                                    Visible par les titulaires
-                                </b-form-checkbox>
-                        </b-form-group>
-                        <b-form-checkbox v-model="form.send_to_teachers" :disabled="!educ && !coord">
-                            Envoyer l'info par email aux professeurs de la classe de l'élève.
-                        </b-form-checkbox>
-
                     </b-form-row>
                 </b-form>
             </b-col>
@@ -185,19 +151,14 @@ export default {
             form: {
                 name: "",
                 matricule_id: null,
-                info_id: null,
                 sanction_decision_id: null,
                 explication_commentaire: "",
                 important: false,
                 demandeur: "",
-                visible_by_educ: false,
-                visible_by_tenure: false,
                 datetime_sanction: null,
-                send_to_teachers: false,
+                datetime_conseil: null,
             },
-            infoOrSanction: null,
-            infoOptions: [],
-            sanctionDecisionOptions: [],
+            sanctionOptions: [],
             name: {matricule: null},
             nameOptions: [],
             nameLoading: false,
@@ -210,14 +171,11 @@ export default {
             errors: {},
             inputStates: {
                 name: null,
-                info_id: null,
                 sanction_decision_id: null,
                 demandeur: null,
                 explication_commentaire: null,
             },
-            coord: false,
-            educ: false,
-        };
+        }
     },
     watch: {
         name: function () {
@@ -236,16 +194,8 @@ export default {
                 });
             }
         },
-        infoOrSanction: function (newChoice) {
-            // Reset other part of the form (sanction_decision or info).
-            if (newChoice == 'info') {
-                this.form.sanction_decision_id = null;
-            } else {
-                this.form.info_id = null;
-            }
-        },
         errors: function (newErrors, oldErrors) {
-            let inputs = ['name', 'info_id', 'sanction_decision_id', 'demandeur', 'explication_commentaire'];
+            let inputs = ['name', 'sanction_decision_id', 'demandeur', 'explication_commentaire'];
             for (let u in inputs) {
                 if (inputs[u] in newErrors) {
                     this.inputStates[inputs[u]] = newErrors[inputs[u]].length == 0;
@@ -265,10 +215,7 @@ export default {
                     display: entry.demandeur,
                 }
                 this.form.explication_commentaire = entry.explication_commentaire;
-                this.form.info_id = entry.info_id;
                 this.form.important = entry.important;
-                this.form.visible_by_educ = entry.visible_by_educ;
-                this.form.visible_by_tenure = entry.visible_by_tenure;
 
                 this.form.sanction_decision_id = entry.sanction_decision_id;
                 if (entry.datetime_sanction) {
@@ -276,8 +223,9 @@ export default {
                     this.form.datetime_sanction = datetime.format('YYYY-MM-DD');
                     this.timeSanction = datetime.format('HH:MM');
                 }
-
-                this.infoOrSanction = entry.info_id ? 'info' : 'sanction-decision';
+                if (entry.datetime_conseil) {
+                    this.form.datetime_conseil = Moment(entry.datetime_sanction).format('YYYY-MM-DD');
+                }
             } else {
                 this.resetModal();
             }
@@ -285,29 +233,25 @@ export default {
     },
     methods: {
         show: function () {
-            this.$refs.addModal.show();
+            this.$refs.askModal.show();
         },
         hide: function () {
-            this.$refs.addModal.hide();
+            this.$refs.askModal.hide();
         },
         resetModal: function () {
             this.$emit('reset');
 
             this.name = {matricule: null};
-            this.infoOrSanction = null;
             this.demandeur = {};
 
             this.form.name = "";
             this.form.matricule_id = null;
-            this.form.info_id = null;
             this.form.sanction_decision_id = null;
             this.form.explication_commentaire = "";
             this.form.important = false;
             this.form.demandeur = "";
-            this.form.visible_by_educ = !this.coord;
-            this.form.visible_by_tenure = !this.educ && !this.coord;
             this.form.datetime_sanction = null;
-            this.form.send_to_teachers = false;
+            this.form.datetime_conseil = null;
         },
         errorMsg(err) {
             if (err in this.errors) {
@@ -316,7 +260,7 @@ export default {
                 return "";
             }
         },
-        addCas: function (evt) {
+        askSanction: function (evt) {
             evt.preventDefault();
 
             this.form.demandeur = this.demandeur.display;
@@ -326,15 +270,17 @@ export default {
                 let time = this.timeSanction ? " " + this.timeSanction : " 12:00";
                 data.datetime_sanction += time;
             }
+            if (data.datetime_conseil) {
+                data.datetim_sanction += " 12:00";
+            }
 
             let modal = this;
             // Send data.
             const token = { xsrfCookieName: 'csrftoken', xsrfHeaderName: 'X-CSRFToken'};
 
-            let path = '/dossier_eleve/api/cas_eleve/'
+            let path = '/dossier_eleve/api/ask_sanctions/'
             if (this.entry) path += this.entry.id + '/'
             const send = this.entry ? axios.put(path, data, token) : axios.post(path, data, token);
-
             send.then(response => {
                 this.hide();
                 this.errors = {};
@@ -399,36 +345,19 @@ export default {
             });
         },
     },
-    components: {Multiselect},
     mounted: function () {
-        // Set policies.
-        this.coord = is_coord;
-        this.educ = is_educ;
-        this.form.visible_by_educ = !this.coord;
-        this.form.visible_by_tenure = !this.educ && !this.coord;
-
-        // Set info options.
-        axios.get('/dossier_eleve/api/info/')
-        .then(response => {
-            this.infoOptions = response.data.results.map(m => {
-                return {value: m.id, text: m.info};
-            });
-        })
-        .catch(function (error) {
-            alert(error);
-        });
-
         // Set sanctions and decisions options.
-        axios.get('/dossier_eleve/api/sanction_decision/')
+        axios.get('/dossier_eleve/api/sanction_decision/?only_sanctions=1')
         .then(response => {
-            this.sanctionDecisionOptions = response.data.results.map(m => {
+            this.sanctionOptions = response.data.results.map(m => {
                 return {value: m.id, text: m.sanction_decision};
             });
         })
         .catch(function (error) {
             alert(error);
         });
-    }
+    },
+    components: {Multiselect},
 }
 </script>
 

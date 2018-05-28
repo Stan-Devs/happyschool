@@ -108,6 +108,7 @@ export default {
                 return;
             }
 
+
             let param = {'unique': this.filterType};
             param[this.filterType] = search;
             if (this.filterType == 'classe') {
@@ -123,6 +124,16 @@ export default {
                         'tag': i.display,
                         'filterType': 'classe',
                         'value': i.year + i.letter,
+                    })))
+                })
+                return;
+            } else if (this.filterType == 'scholar_year') {
+                axios.get('/core/api/scholar_year/?scholar_year=' + search)
+                .then(response => {
+                    this.filterSearchOptions = Array.from(response.data.map(i => ({
+                        'tag': i,
+                        'filterType': 'scholar_year',
+                        'value': i,
                     })))
                 })
                 return;

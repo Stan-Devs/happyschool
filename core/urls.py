@@ -18,6 +18,7 @@
 # along with HappySchool.  If not, see <http://www.gnu.org/licenses/>.
 
 from django.conf.urls import url
+from django.urls import path
 
 from rest_framework.routers import DefaultRouter
 
@@ -29,6 +30,7 @@ app_name = 'core'
 urlpatterns = [
     url(r'^profil/$', views.ProfilView.as_view(), name='profil'),
     url(r'^members/$', views.MembersView.as_view(), name='members'),
+    path('api/scholar_year/', views.ScholarYearAPI),
 ]
 
 router = DefaultRouter()

@@ -27,7 +27,7 @@ from core.models import ResponsibleModel, EmailModel
 from .models import CasEleve
 
 @shared_task(bind=True)
-def task_send_email(self, instance_id):
+def task_send_info_email(self, instance_id):
     instance = CasEleve.objects.get(id=instance_id)
     student = instance.matricule
     teachers_obj = ResponsibleModel.objects.filter(classe=student.classe)

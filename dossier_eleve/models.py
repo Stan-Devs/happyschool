@@ -38,6 +38,8 @@ class InfoEleve(models.Model):
 
 class SanctionDecisionDisciplinaire(models.Model):
     sanction_decision = models.CharField(max_length=200)
+    is_retenue = models.BooleanField(default=False)
+    can_ask = models.BooleanField(default=False)
 
     def __str__(self):
         return self.sanction_decision

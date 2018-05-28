@@ -46,7 +46,7 @@ from core.views import BaseFilters, BaseModelViewSet
 
 from .serializers import *
 from .models import *
-from .tasks import task_send_email
+from .tasks import task_send_info_email
 
 from z3c.rml import rml2pdf
 from io import BytesIO
@@ -702,19 +702,11 @@ def get_settings():
     return settings_dossier_eleve
 
 
-class DossierEleveView(LoginRequiredMixin,
+class BaseDossierEleveView(LoginRequiredMixin,
                        PermissionRequiredMixin,
                        TemplateView):
-    template_name = "dossier_eleve/dossier_eleve.html"
     permission_required = ('dossier_eleve.access_dossier_eleve')
-    filters = [
-        {'value': 'name', 'text': 'Nom'},
-        {'value': 'classe', 'text': 'Classe'},
-        {'value': 'info__info', 'text': 'Info'},
-        {'value': 'sanction_decision__sanction_decision', 'text': 'Sanction/décision'},
-        {'value': 'datetime_encodage', 'text': 'Date encodage'},
-        {'value': 'matricule_id', 'text': 'Matricule'},
-    ]
+    filters = []
 
     def get_context_data(self, **kwargs):
         # Get settings.
@@ -732,6 +724,17 @@ class DossierEleveView(LoginRequiredMixin,
         context['is_educ'] = json.dumps(self.request.user.groups.filter(name__in=['educateur', 'sysadmin']).exists())
         return context
 
+
+class DossierEleveView(BaseDossierEleveView):
+    template_name = "dossier_eleve/dossier_eleve.html"
+    filters = [
+        {'value': 'name', 'text': 'Nom'},
+        {'value': 'classe', 'text': 'Classe'},
+        {'value': 'info__info', 'text': 'Info'},
+        {'value': 'sanction_decision__sanction_decision', 'text': 'Sanction/décision'},
+        {'value': 'datetime_encodage', 'text': 'Date encodage'},
+        {'value': 'matricule_id', 'text': 'Matricule'},
+    ]
 
 class CasEleveFilter(BaseFilters):
     classe = filters.CharFilter(method='classe_by')
@@ -761,7 +764,7 @@ class CasEleveFilter(BaseFilters):
 
 
 class CasEleveViewSet(BaseModelViewSet):
-    queryset = CasEleve.objects.all()
+    queryset = CasEleve.objects.filter(matricule__isnull=False)
     filter_access = True
     all_access = get_settings().all_access.all()
 
@@ -770,23 +773,103 @@ class CasEleveViewSet(BaseModelViewSet):
     filter_class = CasEleveFilter
     ordering_fields = ('datetime_encodage',)
 
+    def get_queryset(self):
+        self.queryset = super().get_queryset()
+        coords = []
+        for i in range(1, 7):
+            coords.append("coord" + str(i))
+        is_coord = self.request.user.groups.filter(name__in=coords + ['direction', 'sysadmin']).exists()
+        is_educ = self.request.user.groups.filter(name__in=['educateur', 'sysadmin']).exists()
+        if is_educ and not is_coord:
+            self.queryset = self.queryset.filter(visible_by_educ=True)
+        elif not is_educ and not is_coord:
+            # Must be a tenure.
+            self.queryset = self.queryset.filter(visible_by_tenure=True)
+
+        return self.queryset
+
+
     def perform_create(self, serializer):
         super().perform_create(serializer)
 
         if serializer.validated_data['send_to_teachers']:
-            task_send_email.apply_async(
+            task_send_info_email.apply_async(
                 countdown=1,
-                kwargs={'instance': serializer.save()}
+                kwargs={'instance_id': serializer.save().id}
             )
 
     def perform_update(self, serializer):
         super().perform_update(serializer)
 
         if serializer.validated_data['send_to_teachers']:
-            task_send_email.apply_async(
+            task_send_info_email.apply_async(
                 countdown=1,
                 kwargs={'instance_id': serializer.save().id}
             )
+
+
+class AskSanctionsView(BaseDossierEleveView):
+    template_name = "dossier_eleve/ask_sanctions.html"
+    filters = [
+        {'value': 'name', 'text': 'Nom'},
+        {'value': 'classe', 'text': 'Classe'},
+        {'value': 'sanction_decision__is_retenue', 'text': 'Retenue'},
+        {'value': 'sanction_decision__sanction_decision', 'text': 'Sanction/décision'},
+        {'value': 'datetime_sanction', 'text': 'Date sanction'},
+        {'value': 'datetime_conseil', 'text': 'Date du conseil'},
+        {'value': 'datetime_encodage', 'text': 'Date encodage'},
+        {'value': 'matricule_id', 'text': 'Matricule'},
+        {'value': 'scholar_year', 'text': 'Année scolaire'},
+    ]
+
+
+class AskSanctionsFilter(BaseFilters):
+    classe = filters.CharFilter(method='classe_by')
+    scholar_year = filters.CharFilter(method='scholar_year_by')
+
+    class Meta:
+        fields_to_filter = ('name', 'matricule_id', 'sanction_decision__sanction_decision', 'datetime_sanction',
+                            'datetime_conseil', 'datetime_encodage', 'sanction_decision__is_retenue')
+        model = CasEleve
+        fields = BaseFilters.Meta.generate_filters(fields_to_filter)
+        filter_overrides = BaseFilters.Meta.filter_overrides
+
+    def classe_by(self, queryset, name, value):
+        if not value[0].isdigit():
+            return queryset
+
+        all_access = get_settings().all_access.all()
+        if not self.request.user.groups.intersection(all_access).exists():
+            teachings = ResponsibleModel.objects.get(user=self.request.user).teaching.all()
+            classes = get_classes(list(map(lambda t: t.name, teachings)), True, self.request.user)
+            queryset = queryset.filter(matricule__classe__in=classes)
+
+        if len(value) > 0:
+            queryset = queryset.filter(matricule__classe__year=value[0])
+            if len(value) > 1:
+                queryset = queryset.filter(matricule__classe__letter=value[1].lower())
+        return queryset
+
+    def scholar_year_by(self, queryset, name, value):
+        start_year = int(value[:4])
+        end_year = start_year + 1
+        start = timezone.datetime(year=start_year, month=8, day=20)
+        end = timezone.datetime(year=end_year, month=8, day=19)
+        return queryset.filter(datetime_encodage__gt=start, datetime_encodage__lt=end)
+
+
+class AskSanctionsViewSet(BaseModelViewSet):
+    queryset = CasEleve.objects.filter(matricule__isnull=False, sanction_decision__isnull=False, sanction_faite=False)
+    filter_access = False
+    serializer_class = CasEleveSerializer
+    permission_classes = (IsAuthenticated, DjangoModelPermissions,)
+    filter_class = AskSanctionsFilter
+    ordering_fields = ('datetime_encodage', 'datetime_sanction')
+
+    def get_queryset(self):
+        sanctions = SanctionDecisionDisciplinaire.objects.filter(can_ask=True)
+        self.queryset = super().get_queryset().filter(sanction_decision__in=sanctions)
+        return self.queryset
 
 
 class InfoViewSet(ReadOnlyModelViewSet):
@@ -797,6 +880,14 @@ class InfoViewSet(ReadOnlyModelViewSet):
 class SanctionDecisionViewSet(ReadOnlyModelViewSet):
     queryset = SanctionDecisionDisciplinaire.objects.all()
     serializer_class = SanctionDecisionDisciplinaireSerializer
+
+    def get_queryset(self):
+        self.queryset = super().get_queryset()
+        only_sanctions = self.request.GET.get('only_sanctions', 0) == 1
+        if only_sanctions:
+            return self.queryset.filter(can_ask=True)
+
+        return self.queryset
 
 
 class StatisticAPI(APIView):

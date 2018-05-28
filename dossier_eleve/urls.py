@@ -43,9 +43,8 @@ urlpatterns = [
     url(r'^get_pdf_retenues/', views.get_pdf_retenues, name='get_pdf_retenues'),
     url(r'^change_sanction/(?P<cas_id>[0-9]+)/(?P<is_done>[0-9]+)$', views.change_sanction, name='change_sanction'),
     url(r'^change_sanction/', views.change_sanction, name='change_sanction'),
-#    url(r'^ajouter_malade$', views.ajouter_malade, name='ajouter_malade'),
-#    url(r'^encoder_sortie/(?P<passageId>[0-9]+)$', views.encoder_sortie, name='encoder_sortie'),
     path('test_vue', views.DossierEleveView.as_view()),
+    path('ask_sanctions', views.AskSanctionsView.as_view()),
     path('api/statistics/<int:matricule>/', views.StatisticAPI.as_view(), name='statistics'),
 ]
 
@@ -53,5 +52,6 @@ router = DefaultRouter()
 router.register(r'api/cas_eleve', views.CasEleveViewSet)
 router.register(r'api/info', views.InfoViewSet)
 router.register(r'api/sanction_decision', views.SanctionDecisionViewSet)
+router.register(r'api/ask_sanctions', views.AskSanctionsViewSet)
 
 urlpatterns += router.urls

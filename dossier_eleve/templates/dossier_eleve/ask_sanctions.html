@@ -1,0 +1,18 @@
+{% extends "core/base_vue.html" %}
+
+{% block header %}
+<title>HappySchool : Demande de sanctions</title>
+{% endblock %}
+{% block content %}
+<script>
+    const current_app = "dossier_eleve";
+    var settings = JSON.parse('{{ settings|safe }}');
+    var filters = JSON.parse('{{ filters|safe }}');
+    var is_coord = JSON.parse('{{ is_coord|safe }}');
+    var is_educ = JSON.parse('{{ is_educ|safe }}');
+</script>
+<div id="vue-app"></div>
+{% load render_bundle from webpack_loader %}
+{% render_bundle 'ask_sanctions' %}
+
+{% endblock %}
