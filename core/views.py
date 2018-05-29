@@ -19,6 +19,7 @@ from core.utilities import get_scolar_year
 
 class BaseFilters(filters.FilterSet):
     unique = filters.CharFilter('unique_by', method='unique_by')
+    scholar_year = filters.CharFilter(method='scholar_year_by')
 
     class Meta:
         fields_to_filter = set()
@@ -46,6 +47,13 @@ class BaseFilters(filters.FilterSet):
         else:
             return queryset
 
+    def scholar_year_by(self, queryset, name, value):
+        start_year = int(value[:4])
+        end_year = start_year + 1
+        start = timezone.datetime(year=start_year, month=8, day=20)
+        end = timezone.datetime(year=end_year, month=8, day=19)
+        return queryset.filter(datetime_encodage__gt=start, datetime_encodage__lt=end)
+
 
 class BaseModelViewSet(ModelViewSet):
     filter_access = False
@@ -54,7 +62,7 @@ class BaseModelViewSet(ModelViewSet):
     all_access = ()
 
     def get_queryset(self):
-        if not self.filter_access or self.request.user.groups.intersection(self.all_access).exists():
+        if not self.filter_access and self.request.user.groups.intersection(self.all_access).exists():
             return self.queryset
         else:
             teachings = ResponsibleModel.objects.get(user=self.request.user).teaching.all()
@@ -97,13 +105,13 @@ class MembersAPI(ModelViewSet):
 class ScholarYearAPI(APIView):
     permission_classes = (IsAuthenticated,)
 
-    def get(self, request, format=None):
-        query = request.GET.get('scholar_year', '')
+    def get(self, format=None):
+        query = self.request.GET.get('scholar_year', '')
         if not query:
             return Response([])
 
         current_year = get_scolar_year()
         options = []
-        for y in range(current_year - 10, current_year + 1):
+        for y in reversed(range(current_year - 10, current_year + 1)):
             options.append("%i-%i" % (y, y + 1))
         return Response(options)

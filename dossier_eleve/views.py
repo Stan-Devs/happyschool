@@ -716,6 +716,8 @@ class BaseDossierEleveView(LoginRequiredMixin,
         context = super().get_context_data(**kwargs)
         context['settings'] = JSONRenderer().render(SettingsSerializer(settings_dossier_eleve).data).decode()
         context['filters'] = json.dumps(self.filters)
+        scholar_year = get_scolar_year()
+        context['current_year'] = json.dumps('%i-%i' % (scholar_year, scholar_year + 1))
         coords = []
         for i in range(1, 7):
             coords.append("coord" + str(i))
@@ -734,6 +736,7 @@ class DossierEleveView(BaseDossierEleveView):
         {'value': 'sanction_decision__sanction_decision', 'text': 'Sanction/décision'},
         {'value': 'datetime_encodage', 'text': 'Date encodage'},
         {'value': 'matricule_id', 'text': 'Matricule'},
+        {'value': 'scholar_year', 'text': 'Année scolaire'},
     ]
 
 class CasEleveFilter(BaseFilters):
@@ -741,7 +744,7 @@ class CasEleveFilter(BaseFilters):
 
     class Meta:
         fields_to_filter = ('name', 'matricule_id', 'info__info', 'sanction_decision__sanction_decision',
-                            'datetime_encodage')
+                            'datetime_encodage', 'scholar_year',)
         model = CasEleve
         fields = BaseFilters.Meta.generate_filters(fields_to_filter)
         filter_overrides = BaseFilters.Meta.filter_overrides
@@ -774,19 +777,19 @@ class CasEleveViewSet(BaseModelViewSet):
     ordering_fields = ('datetime_encodage',)
 
     def get_queryset(self):
-        self.queryset = super().get_queryset()
+        queryset = super().get_queryset()
         coords = []
         for i in range(1, 7):
             coords.append("coord" + str(i))
         is_coord = self.request.user.groups.filter(name__in=coords + ['direction', 'sysadmin']).exists()
         is_educ = self.request.user.groups.filter(name__in=['educateur', 'sysadmin']).exists()
         if is_educ and not is_coord:
-            self.queryset = self.queryset.filter(visible_by_educ=True)
+            queryset = queryset.filter(visible_by_educ=True)
         elif not is_educ and not is_coord:
             # Must be a tenure.
-            self.queryset = self.queryset.filter(visible_by_tenure=True)
+            queryset = queryset.filter(visible_by_tenure=True)
 
-        return self.queryset
+        return queryset
 
 
     def perform_create(self, serializer):
@@ -813,19 +816,23 @@ class AskSanctionsView(BaseDossierEleveView):
     filters = [
         {'value': 'name', 'text': 'Nom'},
         {'value': 'classe', 'text': 'Classe'},
-        {'value': 'sanction_decision__is_retenue', 'text': 'Retenue'},
         {'value': 'sanction_decision__sanction_decision', 'text': 'Sanction/décision'},
         {'value': 'datetime_sanction', 'text': 'Date sanction'},
         {'value': 'datetime_conseil', 'text': 'Date du conseil'},
         {'value': 'datetime_encodage', 'text': 'Date encodage'},
         {'value': 'matricule_id', 'text': 'Matricule'},
         {'value': 'scholar_year', 'text': 'Année scolaire'},
+        {'value': 'activate_all_retenues', 'text': 'Toutes les retenues'},
+        {'value': 'activate_not_done', 'text': 'Sanctions non faites'},
+        {'value': 'activate_waiting', 'text': 'En attentes de validation'},
     ]
 
 
 class AskSanctionsFilter(BaseFilters):
     classe = filters.CharFilter(method='classe_by')
-    scholar_year = filters.CharFilter(method='scholar_year_by')
+    activate_all_retenues = filters.CharFilter(method='activate_all_retenues_by')
+    activate_not_done = filters.CharFilter(method='activate_not_done_by')
+    activate_waiting = filters.CharFilter(method='activate_waiting_by')
 
     class Meta:
         fields_to_filter = ('name', 'matricule_id', 'sanction_decision__sanction_decision', 'datetime_sanction',
@@ -850,17 +857,29 @@ class AskSanctionsFilter(BaseFilters):
                 queryset = queryset.filter(matricule__classe__letter=value[1].lower())
         return queryset
 
-    def scholar_year_by(self, queryset, name, value):
-        start_year = int(value[:4])
-        end_year = start_year + 1
-        start = timezone.datetime(year=start_year, month=8, day=20)
-        end = timezone.datetime(year=end_year, month=8, day=19)
-        return queryset.filter(datetime_encodage__gt=start, datetime_encodage__lt=end)
+    def activate_all_retenues_by(self, queryset, name, value):
+        if value == 'true':
+            retenues = CasEleve.objects.filter(
+                matricule__isnull=False,
+                sanction_decision__is_retenue=True,
+                sanction_faite=False,
+            )
+            return retenues
+
+    def activate_not_done_by(self, queryset, name, value):
+        if value == 'true':
+            return queryset.filter(datetime_sanction__lt=timezone.now())
+        return queryset
+
+    def activate_waiting_by(self, queryset, name, value):
+        if value == 'true':
+            return queryset.filter(datetime_conseil__isnull=True, datetime_sanction__isnull=True)
+        return queryset
 
 
 class AskSanctionsViewSet(BaseModelViewSet):
     queryset = CasEleve.objects.filter(matricule__isnull=False, sanction_decision__isnull=False, sanction_faite=False)
-    filter_access = False
+    filter_access = True
     serializer_class = CasEleveSerializer
     permission_classes = (IsAuthenticated, DjangoModelPermissions,)
     filter_class = AskSanctionsFilter
@@ -868,8 +887,12 @@ class AskSanctionsViewSet(BaseModelViewSet):
 
     def get_queryset(self):
         sanctions = SanctionDecisionDisciplinaire.objects.filter(can_ask=True)
-        self.queryset = super().get_queryset().filter(sanction_decision__in=sanctions)
-        return self.queryset
+        queryset = super().get_queryset().filter(sanction_decision__in=sanctions)
+        return queryset
+
+    def perform_create(self, serializer):
+        super().perform_create(serializer)
+        serializer.save(sanction_faite=False)
 
 
 class InfoViewSet(ReadOnlyModelViewSet):

@@ -195,7 +195,8 @@ export default {
             }
         },
         errors: function (newErrors, oldErrors) {
-            let inputs = ['name', 'sanction_decision_id', 'demandeur', 'explication_commentaire'];
+            let inputs = ['name', 'sanction_decision_id', 'demandeur', 'explication_commentaire',
+            'datetime_conseil', 'datetime_sanctionl'];
             for (let u in inputs) {
                 if (inputs[u] in newErrors) {
                     this.inputStates[inputs[u]] = newErrors[inputs[u]].length == 0;
@@ -224,7 +225,7 @@ export default {
                     this.timeSanction = datetime.format('HH:MM');
                 }
                 if (entry.datetime_conseil) {
-                    this.form.datetime_conseil = Moment(entry.datetime_sanction).format('YYYY-MM-DD');
+                    this.form.datetime_conseil = Moment(entry.datetime_conseil).format('YYYY-MM-DD');
                 }
             } else {
                 this.resetModal();
@@ -271,7 +272,7 @@ export default {
                 data.datetime_sanction += time;
             }
             if (data.datetime_conseil) {
-                data.datetim_sanction += " 12:00";
+                data.datetime_conseil += " 12:00";
             }
 
             let modal = this;

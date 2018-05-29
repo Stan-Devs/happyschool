@@ -169,6 +169,7 @@ export default {
         },
     },
     mounted: function () {
+        this.applyFilter();
         this.loadEntries();
     },
     components: {

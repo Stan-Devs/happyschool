@@ -15,7 +15,7 @@
                             :value="filtersValue"
                             :options="filterSearchOptions" track-by="value"
                             :multiple="true" :taggable="true" @remove="removeFilter"
-                            @select="addFilter"
+                            @select="addFilter" @tag="addCustomTag"
                             :customLabel="niceLabel" :disabled="selectDisabled"
                             @search-change="getOptions"
                             :internalSearch="false"
@@ -64,6 +64,7 @@ export default {
             filterSearch: [],
             filterSearchOptions: [],
             filters: {},
+            searchId: 0,
             dateTime1: null,
             dateTime2: null,
         };
@@ -108,9 +109,10 @@ export default {
                 return;
             }
 
-
             let param = {'unique': this.filterType};
             param[this.filterType] = search;
+            this.searchId += 1;
+            let currentSearch = this.searchId;
             if (this.filterType == 'classe') {
                 const token = {xsrfCookieName: 'csrftoken', xsrfHeaderName: 'X-CSRFToken'};
                 let data = {
@@ -120,6 +122,8 @@ export default {
                 }
                 axios.post('/annuaire/api/classes/', data, token)
                 .then(response => {
+                    if (this.searchId !== currentSearch)
+                        return;
                     this.filterSearchOptions = Array.from(response.data.map(i => ({
                         'tag': i.display,
                         'filterType': 'classe',
@@ -130,6 +134,8 @@ export default {
             } else if (this.filterType == 'scholar_year') {
                 axios.get('/core/api/scholar_year/?scholar_year=' + search)
                 .then(response => {
+                    if (this.searchId !== currentSearch)
+                        return;
                     this.filterSearchOptions = Array.from(response.data.map(i => ({
                         'tag': i,
                         'filterType': 'scholar_year',
@@ -137,11 +143,19 @@ export default {
                     })))
                 })
                 return;
+            } else if (this.filterType.startsWith('activate_')) {
+                this.filterSearchOptions = [{
+                    'tag': 'Activer',
+                    'filterType': this.filterType,
+                    'value': true,
+                }]
+                return;
             }
-
 
             axios.get("/" + this.app + "/api/" + this.model + "/", {params: param})
             .then(response => {
+                if (this.searchId !== currentSearch)
+                    return;
                 let results = [];
                 if (this.filterType.includes('__')) {
                     const subTypes = this.filterType.split('__');
@@ -181,12 +195,20 @@ export default {
             }
             this.addFilter(tag);
         },
+        addCustomTag: function (tag) {
+            const newTag = {
+                filterType: this.filterType,
+                tag: tag,
+                value: tag,
+            }
+            this.addFilter(newTag);
+        },
         addFilter(addedObject, id) {
             this.$store.commit('addFilter', addedObject);
             this.updateFilters();
         },
         removeFilter(removedObject, id) {
-            this.$store.commit('removeFilter', removedObject);
+            this.$store.commit('removeFilter', removedObject.filterType);
             this.updateFilters();
         },
         updateFilters() {

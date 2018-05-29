@@ -27,22 +27,29 @@ import AskSanctions from '../dossier_eleve/askSanctions.vue';
 const store = new Vuex.Store({
   state: {
     settings: settings,
-    filters: [],
+    filters: [{
+        filterType: 'scholar_year',
+        tag: currentYear,
+        value: currentYear,
+    }],
     coord: is_coord,
     educ: is_educ,
   },
   mutations: {
       addFilter: function (state, filter) {
           // If filter is a matricule, remove name filter to avoid conflict.
-          if (filter.filterType === 'matricule') {
+          if (filter.filterType === 'matricule_id') {
               this.commit('removeFilter', 'name');
           }
+
+          // Overwrite same filter type.
+          this.commit('removeFilter', filter.filterType);
 
           state.filters.push(filter);
       },
       removeFilter: function (state, key) {
           for (let f in state.filters) {
-              if (state.filters[f].value === key.value) {
+              if (state.filters[f].filterType === key) {
                   state.filters.splice(f, 1);
                   break;
               }

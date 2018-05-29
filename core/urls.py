@@ -30,7 +30,7 @@ app_name = 'core'
 urlpatterns = [
     url(r'^profil/$', views.ProfilView.as_view(), name='profil'),
     url(r'^members/$', views.MembersView.as_view(), name='members'),
-    path('api/scholar_year/', views.ScholarYearAPI),
+    path('api/scholar_year/', views.ScholarYearAPI.as_view()),
 ]
 
 router = DefaultRouter()

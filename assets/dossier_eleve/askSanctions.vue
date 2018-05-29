@@ -42,12 +42,25 @@
             </b-row>
             <b-row>
                 <b-col>
-                        <b-collapse id="filters" v-model=showFilters>
-                            <b-card>
-                                <filters app="dossier_eleve" model="ask_sanctions" ref="filters" @update="applyFilter"></filters>
-                            </b-card>
-                        </b-collapse>
-                    </b-col>
+                    <b-collapse id="filters" v-model=showFilters>
+                        <b-card>
+                            <filters app="dossier_eleve" model="ask_sanctions" ref="filters" @update="applyFilter"></filters>
+                        </b-card>
+                    </b-collapse>
+                </b-col>
+            </b-row>
+            <b-row>
+                <b-col>
+                    <b-list-group>
+                        <b-list-group-item>Demandes de sanction en attentes : <b-badge>{{ entriesCount }}</b-badge></b-list-group-item>
+                        <b-list-group-item button @click="addFilter('activate_not_done', 'Activer', true)">
+                            Non faites : <b-badge variant="danger">{{ entriesNotDone }}</b-badge>
+                        </b-list-group-item>
+                        <b-list-group-item button @click="addFilter('activate_waiting', 'Activer', true)">
+                            En attentes de validations : <b-badge variant="warning">{{ entriesWaiting }}</b-badge>
+                        </b-list-group-item>
+                    </b-list-group>
+                </b-col>
             </b-row>
             <b-pagination class="mt-1" :total-rows="entriesCount" v-model="currentPage" @change="changePage" :per-page="20">
             </b-pagination>
@@ -107,6 +120,8 @@ export default {
             entriesCount: 0,
             currentPage: 1,
             entries: [],
+            entriesNotDone: 0,
+            entriesWaiting: 0,
             currentEntry: null,
             currentModal: 'ask-modal',
             loaded: false,
@@ -162,16 +177,40 @@ export default {
 
             this.currentEntry = null;
         },
+        addFilter: function(filterType, tag, value) {
+            this.showFilters = true;
+            this.$store.commit('addFilter',
+                {'filterType': filterType, 'tag': tag, 'value': value}
+            );
+            this.applyFilter()
+        },
         loadEntries: function () {
             axios.get('/dossier_eleve/api/ask_sanctions/?page=' + this.currentPage + this.filter + this.ordering)
             .then(response => {
                 this.entriesCount = response.data.count;
                 this.entries = response.data.results;
                 this.loaded = true;
+
+                // Get other counts.
+                this.getEntriesNotDone();
+                this.getEntriesWaiting();
             });
         },
+        getEntriesNotDone: function () {
+            axios.get('/dossier_eleve/api/ask_sanctions/?page=' + this.currentPage + this.filter + this.ordering + '&activate_not_done=true')
+            .then(response => {
+                this.entriesNotDone = response.data.count;
+            })
+        },
+        getEntriesWaiting: function () {
+            axios.get('/dossier_eleve/api/ask_sanctions/?page=' + this.currentPage + this.filter + this.ordering + '&activate_waiting=true')
+            .then(response => {
+                this.entriesWaiting = response.data.count;
+            })
+        }
     },
     mounted: function () {
+        this.applyFilter();
         this.loadEntries();
     },
     components: {
