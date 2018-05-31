@@ -39,7 +39,7 @@ class ResponsibleSensitiveSerializer(serializers.ModelSerializer):
 class StudentSerializer(serializers.ModelSerializer):
     class Meta:
         model = StudentModel
-        fields = '__all__'
+        fields = ('matricule', 'first_name', 'last_name', 'display', 'classe', 'teaching', 'user',)
         depth = 1
 
 

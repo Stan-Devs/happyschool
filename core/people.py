@@ -329,7 +329,8 @@ def _get_classes_access(user: User, teaching: list={"default"}) -> QuerySet:
     # Sysadmins and direction members, educators or coordonators.
     if user.groups.filter(name__in=['sysadmin', 'direction', 'educateur', 'pms']).exists() or \
             user.groups.filter(name__istartswith='coord').exists():
-        classes |= get_classes(teaching).filter(year__in=years)
+        c = get_classes(teaching).filter(year__in=years)
+        classes |= c
 
     # Teachers, tenure's classe only.
     if user.groups.filter(name__in=['professeur']).exists():
@@ -355,15 +356,17 @@ def get_classes(teaching: list={"default"}, check_access: bool=False, user: User
     if check_access and user:
         try:
             teachings = ResponsibleModel.objects.get(user=user).teaching.all()
-            teachings = list(map(lambda t: t.name, teachings))
+            # We want the intersection between the user teachings and the asked teachings.
+            if type(teaching[0]) == TeachingModel:
+                teachings = teachings.intersection(teaching)
             return _get_classes_access(teaching=teachings, user=user)
         except ObjectDoesNotExist:
-            # The user is not a responsible and thus no access.
+            # The user is not a responsible and thus has no access.
             return set()
 
     if "all" not in teaching:
         if type(teaching[0]) == TeachingModel:
-            return ClasseModel.objects.filter(teaching__in=teaching)
+            return ClasseModel.objects.filter(teaching__in=list(teaching))
         else:
             return ClasseModel.objects.filter(teaching__name__in=teaching)
     else:

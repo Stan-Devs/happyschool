@@ -69,6 +69,10 @@ class StudentModel(models.Model):
     def fullname_classe(self):
         return '%s %s %s' % (self.last_name, self.first_name, self.classe.compact_str)
 
+    @property
+    def display(self):
+        return '%s %s %s' % (self.last_name, self.first_name, str(self.classe))
+
     def get_additional_info(self) -> dict:
         """
         Get additional info about a student.
@@ -162,6 +166,7 @@ class ResponsibleModel(models.Model):
     @property
     def fullname(self):
         return '%s %s' % (self.last_name, self.first_name)
+
 
     @property
     def username(self) -> str:

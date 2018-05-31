@@ -377,9 +377,11 @@ def get_pdf_retenues(request, date=None):
 @user_passes_test(lambda u: u.groups.filter(name__in=groups_with_access), login_url='no_access')
 def get_pdf(request, all_year=False, matricule=None, classe=None, infos=None, sanctions=None):
     response = None
+    print(str(infos) + ' ' + str(type(infos)))
+    print(str(sanctions) + ' ' + str(type(sanctions)))
 
     # year_access = get_year_access(request)
-    classe_access = get_classes(['secondaire'], True, request.user)
+    classe_access = get_classes(get_settings().teachings.all(), True, request.user)
 
     if matricule:
         # student = StudentLDAP.objects.get(matricule=matricule)
@@ -407,8 +409,6 @@ def get_pdf(request, all_year=False, matricule=None, classe=None, infos=None, sa
         students = []
         for c in classes:
             students += People().get_students_by_classe(c.compact_str)
-        # filters = ['classeLettre=' + classe[1], 'an=' + classe[0]]
-        # students = student_man.get_people(enseignement='secondaire', filters=filters)
 
         merger = PdfFileMerger()
         added = False
@@ -442,14 +442,13 @@ def create_pdf(student, all_year, infos, sanctions):
         limit_date = timezone.make_aware(timezone.datetime(current_scolar_year, 8, 15))
         cas = CasEleve.objects.filter(matricule=student,
                                       datetime_encodage__gte=limit_date)
-    if not cas:
-        return None
-
     if infos == "0":
         cas = cas.filter(sanction_decision__isnull=False)
     if sanctions == "0":
         cas = cas.filter(info__isnull=False)
 
+    if not cas:
+        return None
 
     context = gen_stats(student)
     tenure = ResponsibleModel.objects.filter(tenure=student.classe).first()
@@ -789,6 +788,8 @@ class CasEleveViewSet(BaseModelViewSet):
             # Must be a tenure.
             queryset = queryset.filter(visible_by_tenure=True)
 
+        if get_settings().enable_submit_sanctions:
+            queryset = queryset.filter(~Q(sanction_faite=False))
         return queryset
 
 

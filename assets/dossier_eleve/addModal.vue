@@ -407,6 +407,8 @@ export default {
         this.form.visible_by_educ = !this.coord;
         this.form.visible_by_tenure = !this.educ && !this.coord;
 
+        this.show();
+
         // Set info options.
         axios.get('/dossier_eleve/api/info/')
         .then(response => {

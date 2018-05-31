@@ -24,6 +24,13 @@
             <b-row>
                 <h2>Dossier des élèves</h2>
             </b-row>
+            <b-row class="mb-2" v-if="$store.state.settings.enable_submit_sanctions">
+                <b-tabs>
+                    <template slot="tabs">
+                        <b-nav-item href="/dossier_eleve/ask_sanctions">Demande de sanctions</b-nav-item>
+                    </template>
+                </b-tabs>
+            </b-row>
             <b-row>
                 <b-col>
                     <b-form-group>
@@ -31,6 +38,10 @@
                             <b-btn variant="primary" @click="openDynamicModal('add-modal')">
                                 <icon name="plus" scale="1" class="align-middle"></icon>
                                 Nouveau cas
+                            </b-btn>
+                            <b-btn variant="secondary" @click="openDynamicModal('export-modal')">
+                                <icon name="file" scale="1" ></icon>
+                                Export
                             </b-btn>
                             <b-btn variant="outline-secondary" v-b-toggle.filters>
                                 <icon name="search" scale="1"></icon>
@@ -94,6 +105,7 @@ window.axios.defaults.baseURL = window.location.origin; // In order to have http
 import Filters from '../common/filters.vue'
 import CasEleveEntry from './casEleveEntry.vue'
 import AddModal from './addModal.vue'
+import ExportModal from './exportModal.vue'
 
 export default {
     data: function () {
@@ -102,7 +114,7 @@ export default {
             currentPage: 1,
             entries: [],
             currentEntry: null,
-            currentModal: 'add-modal',
+            currentModal: null,
             filter: "",
             ordering: "&ordering=-datetime_encodage",
             showFilters: false,
@@ -176,6 +188,7 @@ export default {
         'filters': Filters,
         'cas-eleve-entry': CasEleveEntry,
         'add-modal': AddModal,
+        'export-modal': ExportModal,
     }
 }
 </script>

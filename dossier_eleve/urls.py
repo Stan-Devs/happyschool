@@ -35,6 +35,7 @@ urlpatterns = [
     url(r'^get_cas/$', views.get_cas, name='get_cas'),
     url(r'^get_pdf/(?P<all_year>[0-9]+)/(?P<matricule>[0-9]+)/(?P<infos>[0-9]+)/(?P<sanctions>[0-9]+)/',
         views.get_pdf, name='get_pdf'),
+    url(r'^get_pdf/(?P<all_year>[0-9]+)/(?P<classe>\w+)/(?P<infos>[0-9]+)/(?P<sanctions>[0-9]+)/', views.get_pdf, name='get_pdf'),
     url(r'^get_pdf/(?P<all_year>[0-9]+)/(?P<classe>\w+)/', views.get_pdf, name='get_pdf'),
     url(r'^get_pdf/', views.get_pdf, name='get_pdf'),
     url(r'^get_pdf_council/(?P<date_from>.*)/(?P<date_to>.*)/', views.get_pdf_council, name='get_pdf_council'),

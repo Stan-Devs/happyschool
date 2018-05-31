@@ -24,6 +24,13 @@
             <b-row>
                 <h2>Demande de sanctions</h2>
             </b-row>
+            <b-row class="mb-2">
+                <b-tabs>
+                    <template slot="tabs">
+                        <b-nav-item href="/dossier_eleve/">Dossier des élèves</b-nav-item>
+                    </template>
+                </b-tabs>
+            </b-row>
             <b-row>
                 <b-col>
                     <b-form-group>

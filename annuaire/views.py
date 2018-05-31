@@ -401,10 +401,14 @@ def search_classes(query, teachings, check_access, user):
     if not query[0].isdigit():
         return []
 
+    truncate = True
     classes = get_classes(teaching=teachings, check_access=check_access, user=user)
     classes = classes.filter(year=query[0]).order_by('year', 'letter')
     if len(query) > 1:
         classes = classes.filter(letter=query[1].lower())
+
+    if truncate:
+        classes = classes[:100]
 
     return ClasseSerializer(classes, many=True).data
 
@@ -419,6 +423,7 @@ def search_people(query, people_type, teachings, check_access, user):
     if len(query) < 1:
         return []
 
+    truncate = True
     people = []
     if people_type == 'responsible' or people_type == 'all':
         people += People().get_responsibles_by_name(query, teachings)
@@ -433,6 +438,9 @@ def search_people(query, people_type, teachings, check_access, user):
         classe_years = get_classes(teachings, check_access=True,
                                    user=user) if check_access else None
         people += People().get_students_by_name(query, teachings, classes=classe_years)
+
+    if truncate:
+        people = people[:50]
 
     return map(serialize_people, people)
 

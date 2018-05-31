@@ -45,6 +45,9 @@
                         >
                         Ajouter le filtre
                     </b-button>
+                    <b-button variant="danger" @click="removeFilter('current')">
+                        Retirer
+                    </b-button>
                 </b-col>
             </b-form-row>
         </b-form-group>
@@ -208,7 +211,11 @@ export default {
             this.updateFilters();
         },
         removeFilter(removedObject, id) {
-            this.$store.commit('removeFilter', removedObject.filterType);
+            if (removedObject == 'current') {
+                this.$store.commit('removeFilter', this.filterType);
+            } else {
+                this.$store.commit('removeFilter', removedObject.filterType);
+            }
             this.updateFilters();
         },
         updateFilters() {
