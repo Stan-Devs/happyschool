@@ -40,6 +40,7 @@ urlpatterns = [
     url(r'^get_pdf/', views.get_pdf, name='get_pdf'),
     url(r'^get_pdf_council/(?P<date_from>.*)/(?P<date_to>.*)/', views.get_pdf_council, name='get_pdf_council'),
     url(r'^get_pdf_council/', views.get_pdf_council, name='get_pdf_council'),
+    url(r'^get_pdf_retenues/(?P<date>.*)/(?P<date2>.*)/', views.get_pdf_retenues, name='get_pdf_retenues'),
     url(r'^get_pdf_retenues/(?P<date>.*)', views.get_pdf_retenues, name='get_pdf_retenues'),
     url(r'^get_pdf_retenues/', views.get_pdf_retenues, name='get_pdf_retenues'),
     url(r'^change_sanction/(?P<cas_id>[0-9]+)/(?P<is_done>[0-9]+)$', views.change_sanction, name='change_sanction'),

@@ -39,6 +39,10 @@
                                 <icon name="plus" scale="1" class="align-middle"></icon>
                                 Nouvelle demande
                             </b-btn>
+                            <b-btn variant="secondary" @click="openDynamicModal('ask-export-modal')">
+                                <icon name="file" scale="1" ></icon>
+                                Export
+                            </b-btn>
                             <b-btn variant="outline-secondary" v-b-toggle.filters>
                                 <icon name="search" scale="1"></icon>
                                 Ajouter des filtres
@@ -116,6 +120,7 @@ window.axios.defaults.baseURL = window.location.origin; // In order to have http
 
 import AskSanctionsEntry from './askSanctionsEntry.vue'
 import AskModal from './askModal.vue'
+import AskExportModal from './askExportModal.vue'
 import Filters from '../common/filters.vue'
 
 export default {
@@ -224,6 +229,7 @@ export default {
         'filters': Filters,
         'ask-sanctions-entry': AskSanctionsEntry,
         'ask-modal': AskModal,
+        'ask-export-modal': AskExportModal,
     }
 }
 </script>

@@ -27,7 +27,11 @@
             <b-row class="mb-2" v-if="$store.state.settings.enable_submit_sanctions">
                 <b-tabs>
                     <template slot="tabs">
-                        <b-nav-item href="/dossier_eleve/ask_sanctions">Demande de sanctions</b-nav-item>
+                        <b-nav-item href="/dossier_eleve/ask_sanctions">
+                            Demande de sanctions
+                            <b-badge>{{ askSanctionsCount }}</b-badge>
+                            <b-badge variant="warning">{{ askSanctionsNotDoneCount }}</b-badge>
+                        </b-nav-item>
                     </template>
                 </b-tabs>
             </b-row>
@@ -84,8 +88,10 @@
             <component
                 v-bind:is="currentModal" ref="dynamicModal"
                 @update="loadEntries" @reset="currentEntry = null"
-                :entry="currentEntry">
+                :entry="currentEntry" :entriesCount="entriesCount">
             </component>
+            <b-pagination class="mt-1" :total-rows="entriesCount" v-model="currentPage" @change="changePage" :per-page="20">
+            </b-pagination>
         </b-container>
     </div>
 </template>
@@ -119,17 +125,20 @@ export default {
             ordering: "&ordering=-datetime_encodage",
             showFilters: false,
             loaded: false,
+            askSanctionsCount: 0,
+            askSanctionsNotDoneCount: 0,
         }
     },
     methods: {
         changePage: function (page) {
             this.currentPage = page;
             this.loadEntries();
+            // Move to the top of the page.
+            scroll(0, 0);
             return;
         },
         openDynamicModal: function (modal) {
             this.currentModal = modal;
-            this.$refs.dynamicModal.show();
         },
         filterStudent: function (matricule) {
             this.showFilters = true;
@@ -183,6 +192,15 @@ export default {
     mounted: function () {
         this.applyFilter();
         this.loadEntries();
+
+        axios.get('/dossier_eleve/api/ask_sanctions/?page=' + this.currentPage + this.filter + this.ordering)
+        .then(response => {
+            this.askSanctionsCount = response.data.count;
+        });
+        axios.get('/dossier_eleve/api/ask_sanctions/?page=' + this.currentPage + this.filter + this.ordering + '&activate_not_done=true')
+        .then(response => {
+            this.askSanctionsNotDoneCount = response.data.count;
+        })
     },
     components: {
         'filters': Filters,

@@ -342,9 +342,11 @@ def get_pdf_council(request, date_from=None, date_to=None):
 
 @login_required
 @user_passes_test(lambda u: u.groups.filter(name__in=groups_with_access), login_url='no_access')
-def get_pdf_retenues(request, date=None):
+def get_pdf_retenues(request, date=None, date2=None):
+    if not date2:
+        date2 = date
     rows = filter_and_order(request, column="datetime_sanction", retenues=True,
-                            data1=date.replace("-", "/"), data2=date.replace("-", "/"),
+                            data1=date.replace("-", "/"), data2=date2.replace("-", "/"),
                             order_by="classe")
 
     retenues = []
@@ -377,10 +379,7 @@ def get_pdf_retenues(request, date=None):
 @user_passes_test(lambda u: u.groups.filter(name__in=groups_with_access), login_url='no_access')
 def get_pdf(request, all_year=False, matricule=None, classe=None, infos=None, sanctions=None):
     response = None
-    print(str(infos) + ' ' + str(type(infos)))
-    print(str(sanctions) + ' ' + str(type(sanctions)))
 
-    # year_access = get_year_access(request)
     classe_access = get_classes(get_settings().teachings.all(), True, request.user)
 
     if matricule:
@@ -557,9 +556,7 @@ def filter_and_order(request, only_actives=False, retenues=False, year=None,
     rows = CasEleve.objects.filter(matricule__isnull=False)
 
     # Filter the rows from the user teaching.
-    print(request.user)
     teachings = ResponsibleModel.objects.get(user=request.user).teaching.all()
-    print(teachings)
     rows = rows.filter(matricule__teaching__in=teachings)
 
     # First we filter and order at the query level
@@ -645,7 +642,11 @@ def filter_and_order(request, only_actives=False, retenues=False, year=None,
         rows = rows.order_by(asc + order_by)
 
     if order_by in ['classe']:
-        rows = rows.order_by(asc + 'matricule__' + order_by)
+        rows = rows.order_by(
+            asc + 'matricule__' + order_by + '__year',
+            asc + 'matricule__' + order_by + '__letter',
+            asc + 'matricule__last_name',
+        )
 
     if order_by in ['name']:
         rows = rows.order_by(asc + 'matricule__last_name')

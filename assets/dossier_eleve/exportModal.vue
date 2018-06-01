@@ -21,37 +21,55 @@
 <div>
     <b-modal size="lg" title="Exporter des données dans un fichier"
         ok-title="Créer pdf" :ok-only="true"
-        :ok-disabled="!nameClasse"
+        :ok-disabled="!isOk"
         ref="exportModal"
         @ok="getPdf" @hidden="resetModal"
         >
-        <b-row>
-            <b-col>
-                <b-form-group label="Nom, prénom ou classe" label-for="input-name-classe">
-                    <multiselect id="input-name-classe"
-                        :internal-search="false"
-                        :options="nameClasseOptions"
-                        @search-change="getNameClasseOptions"
-                        :loading="nameClasseLoading"
-                        placeholder="Rechercher un étudiant ou une classe…"
-                        select-label=""
-                        selected-label="Sélectionné"
-                        deselect-label=""
-                        label="display"
-                        track-by="id"
-                        v-model="nameClasse"
-                        >
-                        <span slot="noResult">Aucune personne trouvée.</span>
+        <b-tabs v-model="tabIndex">
+            <b-tab title="Sommaire" active>
+                <b-row>
+                    <b-col>
+                        <b-form-group label="Nom, prénom ou classe" label-for="input-name-classe">
+                            <multiselect id="input-name-classe"
+                                :internal-search="false"
+                                :options="nameClasseOptions"
+                                @search-change="getNameClasseOptions"
+                                :loading="nameClasseLoading"
+                                placeholder="Rechercher un étudiant ou une classe…"
+                                select-label=""
+                                selected-label="Sélectionné"
+                                deselect-label=""
+                                label="display"
+                                track-by="id"
+                                v-model="nameClasse"
+                                >
+                                <span slot="noResult">Aucune personne trouvée.</span>
 
-                    </multiselect>
-                </b-form-group>
-                <b-form-group label="Type de données">
-                    <b-form-checkbox v-model="info">Informations</b-form-checkbox>
-                    <b-form-checkbox v-model="sanction">Sanctions</b-form-checkbox>
-                    <b-form-checkbox v-model="allYears">Toutes années scolaires confondues</b-form-checkbox>
-                </b-form-group>
-            </b-col>
-        </b-row>
+                            </multiselect>
+                        </b-form-group>
+                        <b-form-group label="Type de données">
+                            <b-form-checkbox v-model="info">Informations</b-form-checkbox>
+                            <b-form-checkbox v-model="sanction">Sanctions</b-form-checkbox>
+                            <b-form-checkbox v-model="allYears">Toutes années scolaires confondues</b-form-checkbox>
+                        </b-form-group>
+                    </b-col>
+                </b-row>
+            </b-tab>
+            <b-tab title="Filtre courant" disabled>
+                <p>
+                    Vous pouvez exporter l'affichage courant (toutes pages confondues).
+                </p>
+                <p>
+                    Le nombre de cas filtré est de : {{ entriesCount }}
+                </p>
+                <b-alert variant="warning" :show="entriesCount > 100 && entriesCount < 1000">
+                    Le nombre de cas est relativement grand. La génération du pdf peut prendre un certain temps.
+                </b-alert>
+                <b-alert variant="danger" :show="entriesCount >= 1000">
+                    Le nombre de cas est très grand ! Êtes-vous sûr de vouloir exporter autant de cas ?
+                </b-alert>
+            </b-tab>
+        </b-tabs>
     </b-modal>
 </div>
 </template>
@@ -66,9 +84,11 @@ Moment.locale('fr');
 import axios from 'axios';
 
 export default {
+    props: ['entriesCount'],
     data: function () {
         return {
             searchId: 0,
+            tabIndex: 0,
             nameClasse: null,
             nameClasseOptions: [],
             nameClasseLoading: false,
@@ -76,6 +96,15 @@ export default {
             sanction: true,
             allYears: false,
         }
+    },
+    computed: {
+        isOk: function () {
+            if (this.tabIndex == 0) {
+                return this.nameClasse;
+            } else if (this.tabIndex == 1) {
+                return true;
+            }
+        },
     },
     methods: {
         show: function () {
