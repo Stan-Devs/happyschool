@@ -49,3 +49,9 @@ class ClasseSerializer(serializers.ModelSerializer):
     class Meta:
         model = ClasseModel
         fields = '__all__'
+
+
+class TeachingSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = TeachingModel
+        fields = '__all__'

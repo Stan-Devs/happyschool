@@ -42,7 +42,9 @@ urlpatterns = [
     url(r'^teacher/(?P<id>[0-9]+)/$', views.summary_teacher, name='summary_teacher'),
     url(r'^get_class_photo_pdf/(?P<year>[0-9]+)/(?P<classe>\w+)/(?P<enseignement>\w+)/$', views.get_class_photo_pdf,
         name="get_class_photo_pdf"),
+    path('test_vue', views.AnnuaireView.as_view()),
     path('api/people/', views.SearchPeopleAPI.as_view()),
     path('api/classes/', views.SearchClassesAPI.as_view()),
     path('api/people_or_classes/', views.SearchClassesOrPeopleAPI.as_view()),
+    path('api/studentclasse/', views.StudentClasseAPI.as_view()),
 ]

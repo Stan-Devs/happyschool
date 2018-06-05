@@ -59,7 +59,7 @@ from core.models import StudentModel, EmailModel, ResponsibleModel
 from core.people import People, get_classes, get_years
 
 
-from .models import CasEleve, InfoEleve, SanctionDecisionDisciplinaire, SettingsModel
+from .models import CasEleve, InfoEleve, SanctionDecisionDisciplinaire, DossierEleveSettingsModel
 from .forms import NouveauCasForm, GenerateSummaryPDFForm, GenDisciplinaryCouncilForm, GenRetenueForm
 
 
@@ -262,10 +262,10 @@ def get_cas(request):
 @login_required
 @user_passes_test(lambda u: u.groups.filter(name__in=groups_with_access), login_url='no_access')
 def index(request):
-    settings = SettingsModel.objects.first()
+    settings = DossierEleveSettingsModel.objects.first()
     if not settings:
         # Create default settings.
-        SettingsModel.objects.create().save()
+        DossierEleveSettingsModel.objects.create().save()
 
     if request.method == "POST":
         if request.POST['type'] == 'nouveau':
@@ -345,6 +345,7 @@ def get_pdf_council(request, date_from=None, date_to=None):
 def get_pdf_retenues(request, date=None, date2=None):
     if not date2:
         date2 = date
+
     rows = filter_and_order(request, column="datetime_sanction", retenues=True,
                             data1=date.replace("-", "/"), data2=date2.replace("-", "/"),
                             order_by="classe")
@@ -694,10 +695,10 @@ def get_entries(request, column='name', ens='all'):
 
 
 def get_settings():
-    settings_dossier_eleve = SettingsModel.objects.first()
+    settings_dossier_eleve = DossierEleveSettingsModel.objects.first()
     if not settings_dossier_eleve:
         # Create default settings.
-        SettingsModel.objects.create().save()
+        DossierEleveSettingsModel.objects.create().save()
 
     return settings_dossier_eleve
 
@@ -714,7 +715,7 @@ class BaseDossierEleveView(LoginRequiredMixin,
 
         # Add to the current context.
         context = super().get_context_data(**kwargs)
-        context['settings'] = JSONRenderer().render(SettingsSerializer(settings_dossier_eleve).data).decode()
+        context['settings'] = JSONRenderer().render(DossierEleveSettingsSerializer(settings_dossier_eleve).data).decode()
         context['filters'] = json.dumps(self.filters)
         scholar_year = get_scolar_year()
         context['current_year'] = json.dumps('%i-%i' % (scholar_year, scholar_year + 1))

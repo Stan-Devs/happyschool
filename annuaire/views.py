@@ -23,10 +23,14 @@ from django.shortcuts import render
 from django.http import Http404, JsonResponse, HttpResponse
 from django.template.loader import get_template
 from django.contrib.auth.decorators import login_required, user_passes_test
+from django.contrib.auth.mixins import LoginRequiredMixin
+from django.views.generic import TemplateView
 
 from rest_framework.views import APIView, Response
 from rest_framework.permissions import IsAuthenticated
+
 from rest_framework.parsers import JSONParser
+from rest_framework.renderers import JSONRenderer
 
 from z3c.rml import rml2pdf
 from unidecode import unidecode
@@ -34,6 +38,9 @@ from unidecode import unidecode
 from core.people import People, get_classes
 from core.models import StudentModel, ClasseModel, TeachingModel, ResponsibleModel
 from core.serializers import StudentSerializer, ResponsibleSensitiveSerializer, ClasseSerializer
+
+from .models import AnnuaireSettingsModel
+from .serializers import AnnuaireSettingsSerializer
 
 # from core.Person import Person
 # from core.Student import Student
@@ -394,6 +401,25 @@ def get_class_photo_pdf(request, year, classe, enseignement):
     return response
 
 
+def get_settings():
+    settings_annuaire = AnnuaireSettingsModel.objects.first()
+    if not settings_annuaire:
+        # Create default settings.
+        AnnuaireSettingsModel.objects.create().save()
+
+    return settings_annuaire
+
+
+class AnnuaireView(LoginRequiredMixin,
+                       TemplateView):
+    template_name = "annuaire/annuaire.html"
+    def get_context_data(self, **kwargs):
+        # Add to the current context.
+        context = super().get_context_data(**kwargs)
+        context['settings'] = JSONRenderer().render(AnnuaireSettingsSerializer(get_settings()).data).decode()
+        return context
+
+
 def search_classes(query, teachings, check_access, user):
     if len(query) == 0:
         return []
@@ -504,3 +530,18 @@ class SearchClassesOrPeopleAPI(APIView):
         people = search_people(query=query, people_type=people_type, teachings=teachings,
                                check_access=check_access, user=request.user)
         return Response(people)
+
+
+class StudentClasseAPI(APIView):
+    permission_classes = (IsAuthenticated,)
+    parser_classes = (JSONParser,)
+
+    def get(self, request, format=None):
+        classe_id = request.GET.get('classe', None)
+        print(classe_id)
+        if not classe_id or not classe_id.isdigit:
+            return Response([])
+
+        students = StudentModel.objects.filter(classe__id=classe_id).order_by('last_name', 'first_name')
+        serializer = StudentSerializer(students, many=True)
+        return Response(serializer.data)

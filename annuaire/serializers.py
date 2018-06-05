@@ -17,9 +17,11 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with HappySchool.  If not, see <http://www.gnu.org/licenses/>.
 
-from django.db import models
-from django.contrib.auth.models import Group
+from rest_framework import serializers
+from .models import AnnuaireSettingsModel
 
 
-class AnnuaireSettingsModel(models.Model):
-    can_see_responsibles = models.ManyToManyField(Group, default=None, blank=True)
+class AnnuaireSettingsSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = AnnuaireSettingsModel
+        fields = '__all__'

@@ -28,5 +28,5 @@ class CasDisciplinaireAdmin(admin.ModelAdmin):
 admin.site.register(CasEleve, CasDisciplinaireAdmin)
 admin.site.register(InfoEleve)
 admin.site.register(SanctionDecisionDisciplinaire)
-admin.site.register(SettingsModel)
+admin.site.register(DossierEleveSettingsModel)
 admin.site.register(SanctionStatisticsModel)

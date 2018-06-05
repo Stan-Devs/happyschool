@@ -23,9 +23,9 @@ from core.serializers import StudentSerializer
 from .models import *
 
 
-class SettingsSerializer(serializers.ModelSerializer):
+class DossierEleveSettingsSerializer(serializers.ModelSerializer):
     class Meta:
-        model = SettingsModel
+        model = DossierEleveSettingsModel
         fields = '__all__'
 
 

@@ -167,7 +167,6 @@ class ResponsibleModel(models.Model):
     def fullname(self):
         return '%s %s' % (self.last_name, self.first_name)
 
-
     @property
     def username(self) -> str:
         if settings.USE_LDAP_INFO:

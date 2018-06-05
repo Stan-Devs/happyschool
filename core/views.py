@@ -1,5 +1,5 @@
 from rest_framework.filters import OrderingFilter
-from rest_framework.viewsets import ModelViewSet
+from rest_framework.viewsets import ModelViewSet, ReadOnlyModelViewSet
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.permissions import DjangoModelPermissions, IsAuthenticated
@@ -11,10 +11,10 @@ from django.utils import timezone
 from django.db.models import CharField
 from django.views.generic import TemplateView
 
-from core.models import ResponsibleModel
+from core.models import ResponsibleModel, TeachingModel
 from core.people import get_classes
 from core.permissions import IsSecretaryPermission
-from core.serializers import ResponsibleSerializer
+from core.serializers import ResponsibleSerializer, TeachingSerializer
 from core.utilities import get_scolar_year
 
 class BaseFilters(filters.FilterSet):
@@ -115,3 +115,9 @@ class ScholarYearAPI(APIView):
         for y in reversed(range(current_year - 10, current_year + 1)):
             options.append("%i-%i" % (y, y + 1))
         return Response(options)
+
+
+class TeachingViewSet(ReadOnlyModelViewSet):
+    queryset = TeachingModel.objects.all()
+    serializer_class = TeachingSerializer
+    permission_classes = (IsAuthenticated,)
