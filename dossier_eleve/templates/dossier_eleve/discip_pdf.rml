@@ -16,7 +16,7 @@
         </pageTemplate>
         <pageTemplate id="otherPages">
             <pageGraphics>
-                <drawString x="200" y="820">{{ student.last_name }} {{ student.first_name }} {{ student.classe.compact_str }} – {{ student.get_additional_info.scolar_year }}-{{ student.get_additional_info.scolar_year|add:"1" }}</drawString>
+                <drawString x="200" y="820">{{ student.last_name }} {{ student.first_name }} {{ student.classe.compact_str }} – {{ student.get_additional_info.scholar_year }}-{{ student.get_additional_info.scholar_year|add:"1" }}</drawString>
             </pageGraphics>
             <frame id="discip" x1="10" y1="20" width="570" height="790"/>
         </pageTemplate>
@@ -39,7 +39,7 @@
             </para>
 
             <para style="head_info" leftIndent="20">
-            Année scolaire : <strong>{{ student.get_additional_info.scolar_year }}-{{ student.get_additional_info.scolar_year|add:"1" }}</strong>               
+            Année scolaire : <strong>{{ student.get_additional_info.scholar_year }}-{{ student.get_additional_info.scholar_year|add:"1" }}</strong>               
             Classe : {{ student.classe.compact_str|upper }}               
             Classe précédente :  {% if student.previous_classe %}{{ student.previous_classe|upper }}{% else %}—{% endif %}           
             {% if student.orientation %}Orientation : {{ student.get_additional_info.orientation }}{% endif %}           

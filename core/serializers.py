@@ -32,7 +32,7 @@ class ResponsibleSerializer(serializers.ModelSerializer):
 class ResponsibleSensitiveSerializer(serializers.ModelSerializer):
     class Meta:
         model = ResponsibleModel
-        fields = ('pk', 'matricule', 'last_name', 'first_name', 'is_secretary', 'email_alias', 'teaching')
+        fields = ('pk', 'matricule', 'last_name', 'first_name', 'is_secretary', 'email_alias', 'teaching', 'classe')
         depth = 1
 
 
@@ -41,6 +41,31 @@ class StudentSerializer(serializers.ModelSerializer):
         model = StudentModel
         fields = ('matricule', 'first_name', 'last_name', 'display', 'classe', 'teaching', 'user',)
         depth = 1
+
+
+class StudentGeneralInfoSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = AdditionalStudentInfo
+        fields = ('student', 'gender', 'scholar_year', 'previous_classe',
+                  'orientation', 'birth_date', 'street', 'postal_code',
+                  'locality', 'username', 'password')
+
+
+class StudentContactInfoSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = AdditionalStudentInfo
+        fields = ('student',
+                  'student_phone', 'student_mobile', 'student_email',
+                  'resp_last_name', 'resp_first_name', 'resp_phone', 'resp_mobile', 'resp_email',
+                  'mother_last_name', 'mother_first_name', 'mother_phone', 'mother_mobile', 'mother_email',
+                  'father_last_name', 'father_first_name', 'father_phone', 'father_mobile', 'father_email',
+                  )
+
+
+class StudentMedicalInfoSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = AdditionalStudentInfo
+        fields = ('student', 'doctor', 'doctor_phone', 'mutual', 'mutual_number', 'medical_information')
 
 
 class ClasseSerializer(serializers.ModelSerializer):

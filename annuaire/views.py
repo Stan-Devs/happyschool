@@ -27,6 +27,7 @@ from django.contrib.auth.mixins import LoginRequiredMixin
 from django.views.generic import TemplateView
 
 from rest_framework.views import APIView, Response
+from rest_framework.viewsets import ReadOnlyModelViewSet
 from rest_framework.permissions import IsAuthenticated
 
 from rest_framework.parsers import JSONParser
@@ -36,8 +37,9 @@ from z3c.rml import rml2pdf
 from unidecode import unidecode
 
 from core.people import People, get_classes
-from core.models import StudentModel, ClasseModel, TeachingModel, ResponsibleModel
-from core.serializers import StudentSerializer, ResponsibleSensitiveSerializer, ClasseSerializer
+from core.models import StudentModel, ClasseModel, TeachingModel, ResponsibleModel, AdditionalStudentInfo
+from core.serializers import StudentSerializer, ResponsibleSensitiveSerializer, ClasseSerializer,\
+    StudentGeneralInfoSerializer, StudentContactInfoSerializer, StudentMedicalInfoSerializer
 
 from .models import AnnuaireSettingsModel
 from .serializers import AnnuaireSettingsSerializer
@@ -413,6 +415,7 @@ def get_settings():
 class AnnuaireView(LoginRequiredMixin,
                        TemplateView):
     template_name = "annuaire/annuaire.html"
+
     def get_context_data(self, **kwargs):
         # Add to the current context.
         context = super().get_context_data(**kwargs)
@@ -545,3 +548,48 @@ class StudentClasseAPI(APIView):
         students = StudentModel.objects.filter(classe__id=classe_id).order_by('last_name', 'first_name')
         serializer = StudentSerializer(students, many=True)
         return Response(serializer.data)
+
+
+class StudentInfoViewSet(ReadOnlyModelViewSet):
+    queryset = StudentModel.objects.all()
+    serializer_class = StudentSerializer
+    permission_classes = (IsAuthenticated,)
+
+
+class ResponsibleInfoViewSet(ReadOnlyModelViewSet):
+    queryset = ResponsibleModel.objects.all()
+    serializer_class = ResponsibleSensitiveSerializer
+    permission_classes = (IsAuthenticated,)
+    lookup_field = "matricule"
+
+
+class StudentGeneralInfoViewSet(ReadOnlyModelViewSet):
+    queryset = AdditionalStudentInfo.objects.all()
+    serializer_class = StudentGeneralInfoSerializer
+    permission_classes = (IsAuthenticated,)
+
+
+class StudentContactInfoViewSet(ReadOnlyModelViewSet):
+    queryset = AdditionalStudentInfo.objects.all()
+    serializer_class = StudentContactInfoSerializer
+    permission_classes = (IsAuthenticated,)
+
+    def get_queryset(self):
+        allowed_groups = get_settings().can_see_student_contact.all()
+        if not self.request.user.groups.intersection(allowed_groups).exists():
+            return AdditionalStudentInfo.objects.none()
+
+        return super().get_queryset()
+
+
+class StudentMedicalInfoViewSet(ReadOnlyModelViewSet):
+    queryset = AdditionalStudentInfo.objects.all()
+    serializer_class = StudentMedicalInfoSerializer
+    permission_classes = (IsAuthenticated,)
+
+    def get_queryset(self):
+        allowed_groups = get_settings().can_see_student_medical.all()
+        if not self.request.user.groups.intersection(allowed_groups).exists():
+            return AdditionalStudentInfo.objects.none()
+
+        return super().get_queryset()

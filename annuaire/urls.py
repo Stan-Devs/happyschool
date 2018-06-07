@@ -20,6 +20,8 @@
 from django.conf.urls import url
 from django.urls import path
 
+from rest_framework.routers import DefaultRouter
+
 from . import views
 
 urlpatterns = [
@@ -48,3 +50,12 @@ urlpatterns = [
     path('api/people_or_classes/', views.SearchClassesOrPeopleAPI.as_view()),
     path('api/studentclasse/', views.StudentClasseAPI.as_view()),
 ]
+
+router = DefaultRouter()
+router.register(r'api/student', views.StudentInfoViewSet)
+router.register(r'api/responsible', views.ResponsibleInfoViewSet)
+router.register(r'api/info_general', views.StudentGeneralInfoViewSet)
+router.register(r'api/info_contact', views.StudentContactInfoViewSet)
+router.register(r'api/info_medical', views.StudentMedicalInfoViewSet)
+
+urlpatterns += router.urls

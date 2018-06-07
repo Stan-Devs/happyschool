@@ -22,4 +22,6 @@ from django.contrib.auth.models import Group
 
 
 class AnnuaireSettingsModel(models.Model):
-    can_see_responsibles = models.ManyToManyField(Group, default=None, blank=True)
+    can_see_responsibles = models.ManyToManyField(Group, default=None, blank=True, related_name="can_see_responsibles")
+    can_see_student_contact = models.ManyToManyField(Group, default=None, blank=True, related_name="can_see_student_contact")
+    can_see_student_medical = models.ManyToManyField(Group, default=None, blank=True, related_name="can_see_student_medical")

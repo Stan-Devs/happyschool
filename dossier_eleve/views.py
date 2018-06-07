@@ -794,7 +794,6 @@ class CasEleveViewSet(BaseModelViewSet):
             queryset = queryset.filter(~Q(sanction_faite=False))
         return queryset
 
-
     def perform_create(self, serializer):
         super().perform_create(serializer)
 

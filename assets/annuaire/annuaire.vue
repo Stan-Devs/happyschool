@@ -67,7 +67,7 @@
                     </b-list-group>
                 </b-col>
             </b-row>
-            <info v-if="matricule && students.length == 0" :matricule="matricule" :type="search.type" ></info>
+            <info v-if="matricule && students.length == 0" :matricule="matricule" :type="type" ></info>
         </b-container>
     </div>
 </template>

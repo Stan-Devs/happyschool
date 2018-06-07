@@ -79,11 +79,15 @@
                 @delete="askDelete(entry)"
                 @edit="editEntry(index)"
                 @filterStudent="filterStudent($event)"
+                @showInfo="showInfo(entry)"
                 >
             </cas-eleve-entry>
             <b-modal ref="deleteModal" cancel-title="Annuler" hide-header centered
                 @ok="deleteEntry" @cancel="currentEntry = null">
                 Êtes-vous sûr de vouloir supprimer définitivement cette entrée ?
+            </b-modal>
+            <b-modal :title="currentName" size="lg" ref="infoModal" centered ok-only>
+                <info v-if="currentEntry" :matricule="currentEntry.matricule_id" type="student"></info>
             </b-modal>
             <component
                 v-bind:is="currentModal" ref="dynamicModal"
@@ -108,6 +112,8 @@ import axios from 'axios';
 window.axios = axios;
 window.axios.defaults.baseURL = window.location.origin; // In order to have httpS.
 
+import Info from '../annuaire/info.vue'
+
 import Filters from '../common/filters.vue'
 import CasEleveEntry from './casEleveEntry.vue'
 import AddModal from './addModal.vue'
@@ -129,6 +135,14 @@ export default {
             askSanctionsNotDoneCount: 0,
         }
     },
+    computed: {
+        currentName: function () {
+            if (this.currentEntry) {
+                return this.currentEntry.matricule.display;
+            }
+            return '';
+        }
+    },
     methods: {
         changePage: function (page) {
             this.currentPage = page;
@@ -139,6 +153,10 @@ export default {
         },
         openDynamicModal: function (modal) {
             this.currentModal = modal;
+        },
+        showInfo: function (entry) {
+            this.currentEntry = entry
+            this.$refs.infoModal.show();
         },
         filterStudent: function (matricule) {
             this.showFilters = true;
@@ -207,6 +225,7 @@ export default {
         'cas-eleve-entry': CasEleveEntry,
         'add-modal': AddModal,
         'export-modal': ExportModal,
+        'info': Info,
     }
 }
 </script>

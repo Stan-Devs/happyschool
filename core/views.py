@@ -11,10 +11,11 @@ from django.utils import timezone
 from django.db.models import CharField
 from django.views.generic import TemplateView
 
-from core.models import ResponsibleModel, TeachingModel
+from core.models import ResponsibleModel, TeachingModel, AdditionalStudentInfo
 from core.people import get_classes
 from core.permissions import IsSecretaryPermission
-from core.serializers import ResponsibleSerializer, TeachingSerializer
+from core.serializers import ResponsibleSerializer, TeachingSerializer,\
+    StudentContactInfoSerializer, StudentGeneralInfoSerializer, StudentMedicalInfoSerializer
 from core.utilities import get_scolar_year
 
 class BaseFilters(filters.FilterSet):
